@@ -63,6 +63,7 @@
 
 import { createHash, randomUUID } from "node:crypto";
 import { pathToFileURL } from "node:url";
+import path from "node:path";
 import {
   GetSecretValueCommand,
   SecretsManagerClient,
@@ -396,6 +397,9 @@ function sendStreamingResponse(
 // ── serving ───────────────────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
+  console.log(
+    `[seller-agent] boot pid=${process.pid} bind=${process.env.AGENT_BIND_HOST || "0.0.0.0"} port=${process.env.AGENT_PORT || process.env.PORT || "9000"}`,
+  );
   await loadRuntimeSecrets();
 
   // Wallet material is NEVER bundled into the deploy artifact. `bag deploy`
@@ -581,8 +585,9 @@ async function main(): Promise<void> {
 // never on import — tests import the builders above without starting a
 // server.
 const isMain =
-  process.argv[1] !== undefined &&
-  import.meta.url === pathToFileURL(process.argv[1]).href;
+  process.env.pm_id !== undefined ||
+  (process.argv[1] !== undefined &&
+    import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href);
 if (isMain) {
   main().catch((e) => {
     console.error("[seller-agent] fatal:", e);

@@ -17,6 +17,7 @@ function app(name, port) {
     },
     max_restarts: 20,
     restart_delay: 5000,
+    time: true,
   };
 }
 
