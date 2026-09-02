@@ -1,3 +1,11 @@
+# Am-M
+
+Marketplace hire agent DeFi di BNB Chain. PRD: [`docs/PRD.md`](docs/PRD.md). **Cara nyalain agent:** [`docs/RUNNING.md`](docs/RUNNING.md).
+
+Starter Turbo di bawah ini adalah sisa scaffold `apps/web` / `apps/docs`. Agent **tidak** dijalankan dari akar repo.
+
+---
+
 # Turborepo starter
 
 This Turborepo starter is maintained by the Turborepo core team.

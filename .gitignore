@@ -4,13 +4,19 @@
 node_modules
 .pnp
 .pnp.js
+.pnpm-store/
+.pnpm-debug.log*
 
-# Local env files
+# Local env files (contoh yang aman: **/.env.example)
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Agent Studio — keystore, session, WALLET_PASSWORD, user-admin
+# (tiap agents/<nama>/.gitignore juga punya ini; di akar sebagai jaring pengaman)
+.studio/
 
 # Testing
 coverage
@@ -26,7 +32,6 @@ coverage
 out/
 build
 dist
-
 
 # Debug
 npm-debug.log*
