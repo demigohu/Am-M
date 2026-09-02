@@ -66,3 +66,8 @@ acknowledged_at = "2026-08-29T12:35:20Z"
 max_per_topup_usd = 1.0
 max_per_day_usd = 3.0
 max_per_month_usd = 15.0
+
+[identity]
+endpoint = "https://yieldrouter.ammlabs.fun/"
+registered_at = "2026-09-02T08:54:27.438Z"
+agent_id = 2059
