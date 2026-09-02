@@ -62,6 +62,7 @@
  */
 
 import { createHash, randomUUID } from "node:crypto";
+import { existsSync, readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import path from "node:path";
 import {
@@ -396,9 +397,35 @@ function sendStreamingResponse(
 
 // ── serving ───────────────────────────────────────────────────────────────────
 
+/** cwd is `agents/<desk>/app/agent` → `.studio/.env.local` two levels up. */
+function loadStudioEnv(): void {
+  const file = path.resolve(process.cwd(), "../../.studio/.env.local");
+  if (!existsSync(file)) return;
+  let loaded = 0;
+  for (const raw of readFileSync(file, "utf8").split("\n")) {
+    const line = raw.trim();
+    if (!line || line.startsWith("#")) continue;
+    const eq = line.indexOf("=");
+    if (eq < 1) continue;
+    const key = line.slice(0, eq).trim().replace(/^export\s+/, "");
+    let val = line.slice(eq + 1).trim();
+    if (
+      (val.startsWith('"') && val.endsWith('"')) ||
+      (val.startsWith("'") && val.endsWith("'"))
+    ) {
+      val = val.slice(1, -1);
+    }
+    if (!key || !val) continue;
+    process.env[key] = val;
+    loaded += 1;
+  }
+  console.log(`[seller-agent] loaded ${loaded} keys from ${file}`);
+}
+
 async function main(): Promise<void> {
+  loadStudioEnv();
   console.log(
-    `[seller-agent] boot pid=${process.pid} bind=${process.env.AGENT_BIND_HOST || "0.0.0.0"} port=${process.env.AGENT_PORT || process.env.PORT || "9000"}`,
+    `[seller-agent] boot pid=${process.pid} bind=${process.env.AGENT_BIND_HOST || "0.0.0.0"} port=${process.env.AGENT_PORT || process.env.PORT || "9000"} public=${process.env.PUBLIC_AGENT_URL ?? "(unset)"}`,
   );
   await loadRuntimeSecrets();
 

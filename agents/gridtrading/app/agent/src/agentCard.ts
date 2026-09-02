@@ -96,6 +96,8 @@ function oauth2Scheme(): SecurityScheme | null {
 function publicAgentUrl(): string {
   const fromEnv = (
     process.env.PUBLIC_AGENT_URL ??
+    process.env.BNBAGENT_PUBLIC_URL ??
+    process.env.AGENT_PUBLIC_URL ??
     process.env.AGENTCORE_RUNTIME_URL ??
     ""
   ).trim();

@@ -14,6 +14,8 @@ function app(name, port) {
     env: {
       AGENT_PORT: String(port),
       AGENT_BIND_HOST: "127.0.0.1",
+      PUBLIC_AGENT_URL: `https://${name}.ammlabs.fun`,
+      ERC8183_AGENT_URL: `https://${name}.ammlabs.fun/erc8183`,
     },
     max_restarts: 20,
     restart_delay: 5000,

@@ -157,7 +157,11 @@ Lalu di `.env.local` VPS set `USER_SESSION_FILE=/opt/am-m/agents/healthfactor/.s
 
 Satu file: `agents/<nama>/.studio/.env.local` (`chmod 600`). Bukan `.env`, bukan `app/agent/.env`.
 
-`bag` di Mac hanya memuat path itu. `node dist/unifiedMain.js` tidak memuat file sendiri — pm2 yang inject lewat `env_file` (§7). Tulis **baru** di server; jangan scp `.env.local` Mac (ada `WALLET_PASSWORD`).
+`bag` di Mac hanya memuat path itu. Di VPS, proses Node **membaca `.env.local` sendiri** saat boot (cwd `app/agent` → `../../.studio/.env.local`). pm2 `env_file` **bukan** andalan: `pm2 restart --update-env` **tidak** membaca ulang file itu — dia hanya apply blok `env: {}` yang sudah di-cache.
+
+`ecosystem.config.cjs` sudah set `PUBLIC_AGENT_URL` + `ERC8183_AGENT_URL` per desk (`https://<nama>.ammlabs.fun`). Kalau card masih `localhost`, hampir selalu karena process belum di-start ulang **dari file ecosystem baru**, bukan karena URL salah di nano.
+
+Tulis **baru** di server; jangan scp `.env.local` Mac (ada `WALLET_PASSWORD`).
 
 Contoh `/opt/am-m/agents/healthfactor/.studio/.env.local` (`chmod 600`):
 
@@ -298,7 +302,25 @@ pm2 startup
 # jalankan perintah `sudo env PATH=...` yang dicetak pm2 startup
 ```
 
-`env_file` butuh **pm2 ≥ 5.3**. Cek: `pm2 --version`. Kalau lebih lama, `npm i -g pm2@latest`.
+`env_file` butuh **pm2 ≥ 5.3** dan tetap flaky. Cek: `pm2 --version`. Andalan: Node load `.env.local` + `env: {}` di ecosystem.
+
+**Jangan** `pm2 restart all --update-env` setelah edit `.env.local` — itu tidak re-read file. Cukup `pm2 restart all` **setelah** `pnpm build` yang memuat `loadStudioEnv`. Setelah ganti `ecosystem.config.cjs` (URL publik, port):
+
+```bash
+pm2 delete all
+cd ~/Am-M   # atau /opt/am-m
+pm2 start ecosystem.config.cjs
+pm2 save
+```
+
+Cek env benar-benar masuk process:
+
+```bash
+pm2 env 0 | grep -E 'PUBLIC_AGENT|ERC8183_AGENT|AGENT_PORT'
+pm2 logs healthfactor --lines 30 --nostream | grep seller-agent
+```
+
+Log boot harus ada `public=https://healthfactor.ammlabs.fun`. Kalau `public=(unset)` → dist lama, rebuild.
 
 Perintah harian:
 
@@ -311,11 +333,14 @@ pm2 restart all
 Setelah `git pull` di VPS:
 
 ```bash
-cd /opt/am-m/packages/agent-strategy && pnpm build
+cd ~/Am-M   # atau /opt/am-m
+(cd packages/agent-strategy && pnpm build)
 for a in healthfactor rebalancing gridtrading yieldrouter; do
-  (cd /opt/am-m/agents/$a/app/agent && pnpm build)
+  (cd "agents/$a/app/agent" && pnpm build)
 done
-pm2 restart all
+pm2 delete all
+pm2 start ecosystem.config.cjs
+pm2 save
 ```
 
 ---
