@@ -1,102 +1,188 @@
-import Image, { type ImageProps } from "next/image";
-import { Button } from "@repo/ui/button";
-import styles from "./page.module.css";
+import Link from "next/link";
+import { AppShell } from "../components/layout/AppShell";
+import { DESKS } from "../lib/catalog";
+import { SCAN_8004 } from "../lib/altana/chain";
 
-type Props = Omit<ImageProps, "src"> & {
-  srcLight: string;
-  srcDark: string;
-};
-
-const ThemeImage = (props: Props) => {
-  const { srcLight, srcDark, ...rest } = props;
-
+export default function HomePage() {
   return (
-    <>
-      <Image {...rest} src={srcLight} className="imgLight" />
-      <Image {...rest} src={srcDark} className="imgDark" />
-    </>
-  );
-};
-
-export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <ThemeImage
-          className={styles.logo}
-          srcLight="turborepo-dark.svg"
-          srcDark="turborepo-light.svg"
-          alt="Turborepo logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>apps/web/app/page.tsx</code>
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new/clone?demo-description=Learn+to+implement+a+monorepo+with+a+two+Next.js+sites+that+has+installed+three+local+packages.&demo-image=%2F%2Fimages.ctfassets.net%2Fe5382hct74si%2F4K8ZISWAzJ8X1504ca0zmC%2F0b21a1c6246add355e55816278ef54bc%2FBasic.png&demo-title=Monorepo+with+Turborepo&demo-url=https%3A%2F%2Fexamples-basic-web.vercel.sh%2F&from=templates&project-name=Monorepo+with+Turborepo&repository-name=monorepo-turborepo&repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fturborepo%2Ftree%2Fmain%2Fexamples%2Fbasic&root-directory=apps%2Fdocs&skippable-integrations=1&teamSlug=vercel&utm_source=create-turbo"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://turborepo.dev/docs?utm_source"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
+    <AppShell>
+      <main className="mx-auto w-full max-w-[1200px] px-4 lg:px-10">
+        <div className="mb-12 flex flex-wrap items-center justify-between border-b border-ink pb-2 font-mono text-[13px] text-char">
+          <div className="flex items-center gap-3">
+            <span className="font-mono text-lg font-medium text-ink">AM-M</span>
+            <span>•</span>
+            <span>FOUR JOBS</span>
+            <span>•</span>
+            <span>BNB TESTNET</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="inline-block h-2 w-2 rounded-full bg-status-green" />
+            <span className="font-medium text-ink">4 SELLERS · AMMLABS.FUN</span>
+          </div>
         </div>
-        <Button appName="web" className={styles.secondary}>
-          Open alert
-        </Button>
+
+        <section className="flex flex-col items-start pt-4 pb-12">
+          <div className="mb-6 flex flex-wrap items-center gap-2">
+            <div className="inline-flex items-center gap-2 rounded-full border border-ink bg-status-green/10 px-3 py-1">
+              <span className="h-2 w-2 rounded-full bg-status-green" />
+              <span className="text-[13px] font-bold tracking-wide">Live (testnet)</span>
+            </div>
+          </div>
+          <h1 className="mb-6 max-w-4xl font-display text-4xl leading-[1.08] font-extrabold tracking-tight md:text-[56px] md:leading-[64px]">
+            Hire a DeFi agent. You keep the keys.
+          </h1>
+          <p className="mb-8 max-w-2xl text-lg leading-relaxed text-char">
+            Four jobs on BNB Chain: keep an LP in range, run a grid, park yield, or guard a
+            health factor. Pick a desk, grant a bounded session, revoke anytime.
+          </p>
+          <div className="flex w-full flex-col justify-between gap-6 border-t border-ink/20 pt-4 sm:flex-row sm:items-center">
+            <div className="flex flex-wrap items-center gap-3">
+              <a
+                href="#desks"
+                className="inline-flex items-center rounded-full border border-ink bg-marigold px-7 py-3 text-sm font-bold hover:bg-marigold-dim"
+              >
+                Pick a job
+              </a>
+              <Link
+                href="/market"
+                className="inline-flex items-center rounded-full border border-ink px-7 py-3 text-sm font-bold hover:bg-bone"
+              >
+                Compare sellers
+              </Link>
+            </div>
+            <p className="max-w-sm text-sm text-char">
+              Account is a passkey on this site — not MetaMask, not a hosted login.
+            </p>
+          </div>
+        </section>
+
+        <div className="flex h-20 items-center">
+          <div className="w-full border-t-2 border-ink" />
+        </div>
+
+        <section id="how-it-works" className="scroll-mt-24">
+          <div className="mb-8 flex items-baseline justify-between border-b border-ink pb-2">
+            <h2 className="font-display text-2xl font-medium">How it works</h2>
+            <span className="font-mono text-[13px] tracking-widest text-char uppercase">
+              Hire · Grant · Tick
+            </span>
+          </div>
+          <div className="grid grid-cols-1 divide-y divide-ink border-y border-ink md:grid-cols-3 md:divide-x md:divide-y-0">
+            {[
+              {
+                n: "01",
+                tag: "JOB",
+                tagClass: "bg-bone",
+                title: "Pick a desk",
+                body: "Rebalance, Grid, Yield, or Guard. Each listing shows live ticks for that job — not a generic agent card.",
+                foot: "THEN OPEN THE AGENT",
+              },
+              {
+                n: "02",
+                tag: "GRANT",
+                tagClass: "bg-marigold",
+                title: "Grant a bounded session",
+                body: "Review the allowlist and the first action. Face ID on /account, then grant. Spend cap and expiry are on-chain.",
+                foot: "REVOKE FROM /ACCOUNT",
+              },
+              {
+                n: "03",
+                tag: "TICK",
+                tagClass: "bg-bone",
+                title: "Agent transacts",
+                body: "The seller process ticks on your session. You keep admin. One revoke stops that agent.",
+                foot: "KEYS STAY WITH YOU",
+              },
+            ].map((step) => (
+              <div key={step.n} className="flex min-h-[290px] flex-col justify-between p-8">
+                <div>
+                  <div className="mb-4 flex items-center justify-between">
+                    <span className="font-mono text-[28px] font-bold">{step.n}</span>
+                    <span
+                      className={`rounded-full border border-ink px-2 py-0.5 font-mono text-[13px] ${step.tagClass}`}
+                    >
+                      {step.tag}
+                    </span>
+                  </div>
+                  <h3 className="mb-2 font-display text-2xl font-medium">{step.title}</h3>
+                  <p className="leading-relaxed text-char">{step.body}</p>
+                </div>
+                <div className="mt-4 border-t border-oat pt-4 font-mono text-[13px] text-char">
+                  {step.foot}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <div className="flex h-20 items-center">
+          <div className="w-full border-t-2 border-ink" />
+        </div>
+
+        <section id="desks" className="scroll-mt-24 pb-4">
+          <div className="mb-8 flex items-baseline justify-between border-b border-ink pb-2">
+            <h2 className="font-display text-2xl font-medium">Four desks</h2>
+            <span className="font-mono text-[13px] text-char">1 SELLER EACH · TESTNET</span>
+          </div>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {DESKS.map((desk) => (
+              <div
+                key={desk.slug}
+                className="flex min-h-[300px] flex-col justify-between rounded-[20px] border border-ink bg-bone p-8 transition-transform hover:-translate-y-1"
+              >
+                <div>
+                  <div className="mb-4 flex items-center justify-between border-b border-oat pb-2">
+                    <div className="flex items-center gap-2">
+                      <span className={`h-3 w-3 rounded-full ${desk.color}`} />
+                      <span className="font-mono text-[13px] tracking-wider uppercase">
+                        {desk.mark}
+                      </span>
+                    </div>
+                    <span className="font-mono text-[13px] text-char">{desk.code}</span>
+                  </div>
+                  <h3 className="mb-1 font-display text-2xl font-medium">{desk.name}</h3>
+                  <p className="mb-6 leading-relaxed text-char">{desk.job}</p>
+                </div>
+                <div className="flex items-center justify-between border-t border-oat pt-4">
+                  <Link
+                    href={`/desks/${desk.slug}`}
+                    className="inline-flex items-center gap-1 text-sm font-bold hover:underline"
+                  >
+                    See listings <span>→</span>
+                  </Link>
+                  <span className="font-mono text-[13px] text-char">{desk.listingsLabel}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="pt-8 pb-12">
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-y border-ink py-4 text-center">
+            <a
+              href="https://testnet.bscscan.com"
+              className="text-[15px] font-bold underline underline-offset-4"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              BscScan testnet
+            </a>
+            <span className="text-char">·</span>
+            <a
+              href={SCAN_8004}
+              className="text-[15px] font-bold underline underline-offset-4"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              8004scan
+            </a>
+            <span className="text-char">·</span>
+            <Link href="/account" className="text-[15px] font-bold underline underline-offset-4">
+              Account
+            </Link>
+          </div>
+        </section>
       </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com/templates?search=turborepo&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://turborepo.dev?utm_source=create-turbo"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to turborepo.dev →
-        </a>
-      </footer>
-    </div>
+    </AppShell>
   );
 }

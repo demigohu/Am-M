@@ -54,7 +54,7 @@ Apex `ammlabs.fun` boleh ditunda — itu untuk FE nanti, bukan keempat agent. Ja
 
 Opsional: satu wildcard `*.ammlabs.fun A <IP_VPS>` kalau mau 8 listing nanti tanpa nambah record satu-satu. Caddy tetap butuh blok `host { }` per nama.
 
-Firewall: **80/443** ke dunia. Port 9001–9004, 9000, 8088 **hanya loopback**.
+Firewall: **80/443** ke dunia. Port 9001–9004, 9000, 8088, **42069**, **5432** **hanya loopback**.
 
 **9router** harus reachable dari VPS (bukan `127.0.0.1` di Mac). Tanpa itu tick DeFi tetap jalan; penjelasan LLM di deliverable 8183 jatuh ke JSON mentah.
 
@@ -182,9 +182,11 @@ ERC8183_AGENT_URL=https://healthfactor.ammlabs.fun/erc8183
 BNB_TESTNET_RPC_URL=https://bsc-testnet-rpc.publicnode.com
 TICK_INTERVAL_MS=120000
 
-# Demo sebelum FE:
+# Demo sebelum FE (opsional; hire publik lewat ingest, §7.1):
 # USER_SESSION_FILE=/opt/am-m/agents/healthfactor/.studio/user-session.json
 ```
+
+`USER_SESSIONS_DIR` **jangan** ditulis di sini — `ecosystem.config.cjs` sudah set per desk ke `<repo>/data/sessions/{guard,rebalance,grid,yield}`. pm2 `env` menang dari `.env.local` untuk key yang sama.
 
 Ulangi untuk 9002 / 9003 / 9004 dan URL desk masing-masing.
 
@@ -214,6 +216,18 @@ server {
     listen [::]:80;
     server_name healthfactor.ammlabs.fun;
 
+    # Indexer Ponder (loopback :42069). Trailing slash di kedua sisi wajib.
+    location /indexer/ {
+        client_max_body_size 256k;
+        proxy_pass http://127.0.0.1:42069/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 300s;
+    }
+
     location / {
         proxy_pass http://127.0.0.1:9001;
         proxy_http_version 1.1;
@@ -225,6 +239,8 @@ server {
     }
 }
 ```
+
+`location /indexer/` **hanya** di site healthfactor (satu URL, cert yang sudah ada). Tiga site lain tidak perlu. Setelah certbot, sisipkan blok yang sama ke `server { listen 443 ssl; … }` — location di server 80 yang cuma redirect tidak kepakai.
 
 Tiga file lain: ganti `server_name` + `proxy_pass`:
 
@@ -316,8 +332,9 @@ pm2 save
 Cek env benar-benar masuk process:
 
 ```bash
-pm2 env 0 | grep -E 'PUBLIC_AGENT|ERC8183_AGENT|AGENT_PORT'
+pm2 env 0 | grep -E 'PUBLIC_AGENT|ERC8183_AGENT|AGENT_PORT|INDEXER_URL|AMM_DESK'
 pm2 logs healthfactor --lines 30 --nostream | grep seller-agent
+pm2 logs indexer --lines 20 --nostream
 ```
 
 Log boot harus ada `public=https://healthfactor.ammlabs.fun`. Kalau `public=(unset)` → dist lama, rebuild.
@@ -327,14 +344,84 @@ Perintah harian:
 ```bash
 pm2 status
 pm2 logs healthfactor
+pm2 logs indexer
 pm2 restart all
 ```
+
+### 7.1 Indexer + session (hire dari FE)
+
+PRD: session user dikirim HTTPS ke VPS, **terenkripsi di Postgres**, agent dekripsi di memori tick. Ponder index Keystore / eksekusi / $U hire / konteks mainnet.
+
+1. Postgres (Docker) + secret (jangan commit, jangan `NEXT_PUBLIC_*`):
+
+```bash
+openssl rand -hex 32   # INDEXER_SECRET
+openssl rand -hex 32   # SESSION_KEY_ENCRYPTION_KEY
+cd /opt/am-m
+docker compose up -d postgres
+# DATABASE_URL=postgres://amm:amm@127.0.0.1:5432/amm
+```
+
+2. Indexer env:
+
+```bash
+cp apps/indexer/.env.example apps/indexer/.env.local
+chmod 600 apps/indexer/.env.local
+# isi DATABASE_URL, INDEXER_SECRET, SESSION_KEY_ENCRYPTION_KEY
+cd apps/indexer && pnpm install && cd ../..
+```
+
+3. Secret yang sama di **empat** `agents/<nama>/.studio/.env.local`:
+
+```
+INDEXER_SECRET=<sama>
+SESSION_KEY_ENCRYPTION_KEY=<sama>
+AMM_DESK=guard   # rebalance / grid / yield — ecosystem juga set ini
+```
+
+4. Nginx: `location /indexer/` di site **healthfactor** (§6.1), `sudo nginx -t && sudo systemctl reload nginx`.
+
+5. pm2 (bukan `restart --update-env`):
+
+```bash
+(cd packages/agent-strategy && pnpm build)
+pm2 delete all
+pm2 start ecosystem.config.cjs
+pm2 save
+```
+
+Harus ada lima app: empat agent + `indexer`. Postgres di Docker, bukan pm2.
+
+6. Mac `apps/web/.env.local` (restart Next):
+
+```
+INDEXER_URL=https://healthfactor.ammlabs.fun/indexer
+INDEXER_SECRET=<secret yang sama>
+```
+
+Hire persist 500 kalau URL/secret tidak berpasangan; 502 kalau indexer down. Grant on-chain tetap terjadi — hire ulang setelah indexer hijau.
+
+Cek:
+
+```bash
+curl -sS https://healthfactor.ammlabs.fun/indexer/v1/health
+curl -sS -o /dev/null -w '%{http_code}\n' \
+  -X POST https://healthfactor.ammlabs.fun/indexer/v1/sessions \
+  -H 'content-type: application/json' -d '{}'
+```
+
+Health `{ ok: true }`. POST tanpa Bearer harus `401`. GraphQL: `/indexer/graphql`.
+
+Jangan `cat` / paste envelope. Hire lama di Mac `.data/sessions/` **tidak** otomatis masuk DB — hire ulang.
+
+`/strategy` idle sampai indexer mengembalikan session untuk `AMM_DESK` itu. Tick Rebalance butuh Venus USDT + WBNB di vault; kalau tidak, `blocked`.
 
 Setelah `git pull` di VPS:
 
 ```bash
 cd ~/Am-M   # atau /opt/am-m
 (cd packages/agent-strategy && pnpm build)
+(cd apps/indexer && pnpm install)
 for a in healthfactor rebalancing gridtrading yieldrouter; do
   (cd "agents/$a/app/agent" && pnpm build)
 done
@@ -357,7 +444,7 @@ curl -sS https://healthfactor.ammlabs.fun/strategy
 
 Card: `url` HTTPS publik, skills `negotiate` + `notify_funded`, **tanpa** OAuth (`OAUTH_TOKEN_URL` jangan di-set).
 
-`/strategy` idle tanpa `USER_SESSION_FILE` itu wajar.
+`/strategy` idle tanpa session di indexer (atau `USER_SESSION_FILE` demo) itu wajar.
 
 ---
 
@@ -397,7 +484,7 @@ Storage `kind = local` di VPS **boleh**. IPFS hanya jika deliverable harus tahan
 ## 11. Yang belum termasuk dokumen ini
 
 - Delapan identitas (varian agresif)
-- Frontend Vercel + passkey `/account`
+- Frontend Vercel + passkey `/account` (Vercel FS ephemeral — tetap butuh `INDEXER_URL` + `INDEXER_SECRET`, §7.1)
 - Indexer Ponder + Postgres
 - Laporan TermiX
 

@@ -41,3 +41,10 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
+
+# Browser-posted user sessions (contain session private keys)
+.data/
+data/sessions/
+
+# Ponder
+.ponder/

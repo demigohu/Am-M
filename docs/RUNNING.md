@@ -188,4 +188,4 @@ Jangan jalankan `bag wallet new` dua kali di proyek yang sama (keystore baru mem
 ## Dua jenis session (jangan tertukar)
 
 1. **Session agent** — `bag wallet session grant` di folder agent. Wajib supaya `bag dev` bisa sign quote 8183. Bukan untuk mint Venus.
-2. **Session user** — hasil `grantSession` passkey di browser (nanti, halaman `/account`). File-nya di-export `USER_SESSION_FILE=...` (mode 0600). Inilah yang dipakai tick untuk `repayBorrow` / `mint` / LP / swap.
+2. **Session user** — hasil `grantSession` passkey di `/hire`. Browser POST ke Next `/api/sessions`; Next meneruskan ke indexer VPS (Postgres terenkripsi, `docs/DEPLOY.md` §7.1). Agent load dari indexer tiap tick. Demo lokal tanpa FE: `USER_SESSION_FILE=...` (mode 0600).

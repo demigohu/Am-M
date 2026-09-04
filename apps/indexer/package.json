@@ -1,0 +1,25 @@
+{
+  "name": "indexer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "ponder dev --port 42069",
+    "start": "ponder start --port 42069",
+    "codegen": "ponder codegen",
+    "lint": "node -e \"process.exit(0)\"",
+    "check-types": "ponder codegen"
+  },
+  "dependencies": {
+    "hono": "^4.7.10",
+    "pg": "^8.16.3",
+    "ponder": "^0.16.6",
+    "viem": "^2.56.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.15.5",
+    "eslint": "10.9.1",
+    "typescript": "^5.8.3"
+  }
+}

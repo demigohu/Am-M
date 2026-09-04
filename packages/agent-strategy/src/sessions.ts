@@ -2,18 +2,23 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import type { Session } from "@altananetwork/sdk";
 import { deserializeSession } from "@bnbagent/sdk/wallets";
+import { decryptEnvelope } from "./sessionCrypto.js";
 
 /**
  * Load user Altana sessions for strategy ticks.
  *
  * Never log the payload — it contains the session private key.
  * Sources (first match wins per entry):
+ *   INDEXER_URL + INDEXER_SECRET + AMM_DESK — encrypted rows from apps/indexer
  *   USER_SESSION          — one serialized session JSON string
  *   USER_SESSION_FILE     — path to one serializeSession() file
  *   USER_SESSIONS_DIR     — directory of *.json files
  */
 export async function loadUserSessions(): Promise<Session[]> {
   const out: Session[] = [];
+  const fromIndexer = await loadFromIndexer();
+  out.push(...fromIndexer);
+
   const env = process.env.USER_SESSION;
   if (env && env.trim() !== "") {
     out.push(await deserializeSession(env));
@@ -32,6 +37,35 @@ export async function loadUserSessions(): Promise<Session[]> {
       if (body.trim() === "") continue;
       out.push(await deserializeSession(body));
     }
+  }
+  return out;
+}
+
+async function loadFromIndexer(): Promise<Session[]> {
+  const base = process.env.INDEXER_URL?.trim().replace(/\/$/, "");
+  const secret = process.env.INDEXER_SECRET?.trim();
+  const desk = process.env.AMM_DESK?.trim();
+  const encKey = process.env.SESSION_KEY_ENCRYPTION_KEY?.trim();
+  if (!base || !secret || !desk || !encKey) return [];
+  const res = await fetch(`${base}/v1/sessions?desk=${encodeURIComponent(desk)}`, {
+    headers: { authorization: `Bearer ${secret}` },
+  });
+  if (!res.ok) {
+    console.warn(`[strategy.tick] indexer sessions ${res.status}`);
+    return [];
+  }
+  const body = (await res.json()) as {
+    items?: { envelope?: string; envelopeCipher?: string }[];
+  };
+  const out: Session[] = [];
+  for (const item of body.items ?? []) {
+    const raw = item.envelope
+      ? item.envelope
+      : item.envelopeCipher
+        ? decryptEnvelope(item.envelopeCipher, encKey)
+        : "";
+    if (!raw.trim()) continue;
+    out.push(await deserializeSession(raw));
   }
   return out;
 }

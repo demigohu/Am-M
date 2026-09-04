@@ -523,15 +523,20 @@ Jangan palsukan sisi DIY. Rekam layar atau riwayat tx. Lampirkan output sungguha
 
 ---
 
-## 13. UX / standar visual
+## 13. UX / design system
 
-Produk ini bersaing untuk jadi pintu resmi. Kualitas visual adalah bagian Functionality (gesekan, trust) dan kelayakan adopsi Phase 2.
+Ini aturan **produk**: journey, IA, copy, state, kepadatan data. Bukan palet.
 
-- Satu sistem: tipografi, warna, identitas desk (empat desk harus terasa seperti satu produk dengan empat ruangan, bukan empat landing page).
-- Data padat, bukan crypto-hero kosong. Tabel dan tick mengalahkan lottie.
+Tampilan FE (warna, type, kartu, CTA, peanut) mengikuti Stitch di [`apps/web/DESIGN.md`](../apps/web/DESIGN.md). File itu spek visual saja. Kalau copy Stitch bertentangan dengan §7–8, PRD yang menang.
+
+- Satu produk, empat ruangan (Rebalance, Grid, Yield, Guard) — bukan empat landing page.
+- Layar pertama: pekerjaan, bukan nama protokol. ERC-8004 / 8183 / Keystore muncul di halaman agent dan session sebagai **bukti**, dengan tautan explorer.
+- Data padat: tabel dan tick, bukan crypto-hero kosong atau angka karangan. “Belum diukur” lebih jujur daripada SLA palsu.
 - Tautan explorer di setiap fakta onchain (BscScan, 8004scan, explorer Altana).
-- Desktop dulu (juri akan review di desktop). Usable di 1280px. Mobile bisa dibaca, bukan target desain.
-- State akun: belum passkey, wallet counterfactual (belum execute), menunggu dana, session kedaluwarsa, agent tidak sehat. Bukan “connect MetaMask.”
+- Desktop dulu (juri di 1280px). Mobile bisa dibaca, bukan target desain.
+- `/account` adalah hub: buat akun (passkey di app ini), danai, saldo, agent aktif, revoke, tarik. Bukan “connect MetaMask.” `/sessions` bukan rute.
+- `/hire/[id]` hanya preview izin + tindakan pertama + grant. Belum akun/dana → `/account?next=`.
+- Setiap CTA yang bisa gagal punya pemulihan (faucet, retry, agent offline).
 
 ---
 
