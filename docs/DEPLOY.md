@@ -313,7 +313,7 @@ cd ~/Am-M    # atau path clone kamu
 cd packages/agent-strategy && pnpm install && pnpm build && cd ../..
 for a in healthfactor rebalancing gridtrading yieldrouter; do
   (cd "agents/$a" && pnpm install)
-  (cd "agents/$a/app/agent" && pnpm build)
+  (cd "agents/$a/app/agent" && pnpm install && pnpm build)
   test -f "agents/$a/app/agent/dist/unifiedMain.js" || echo "MISSING dist $a"
 done
 ```
@@ -498,11 +498,14 @@ sudo nginx -t && sudo systemctl reload nginx
 `pm2 restart --update-env` **tidak** membaca `.env.local` baru. Setelah env indexer/agent berubah:
 
 ```bash
-cd /opt/am-m
+cd /opt/am-m   # atau /root/Am-M
 (cd packages/agent-strategy && pnpm install && pnpm build)
+test -f packages/agent-strategy/dist/sessions.js
 CI=true pnpm install --filter indexer
+# agents/ di luar workspace: file: copy dist. Wajib reinstall setelah strategy build.
 for a in healthfactor rebalancing gridtrading yieldrouter; do
-  (cd "agents/$a/app/agent" && pnpm build)
+  (cd "agents/$a" && pnpm install)
+  (cd "agents/$a/app/agent" && pnpm install && pnpm build)
 done
 pm2 delete all
 pm2 start ecosystem.config.cjs
@@ -566,24 +569,25 @@ Hire lama di Mac `apps/web/.data/sessions/` **tidak** pindah ke Postgres. Jangan
 #### I. Setelah `git pull` di VPS
 
 ```bash
-cd /opt/am-m
+cd /opt/am-m   # atau /root/Am-M
 git pull
 (cd packages/agent-strategy && pnpm install && pnpm build)
 CI=true pnpm install --filter indexer
 for a in healthfactor rebalancing gridtrading yieldrouter; do
   (cd "agents/$a" && pnpm install)
-  (cd "agents/$a/app/agent" && pnpm build)
+  (cd "agents/$a/app/agent" && pnpm install && pnpm build)
 done
 pm2 delete all
 pm2 start ecosystem.config.cjs
 pm2 save
-curl -sS https://healthfactor.ammlabs.fun/indexer/v1/health
+curl -sS http://127.0.0.1:42069/v1/health
 ```
 
 #### J. Kalau rusak
 
 | Gejala | Cek |
 | --- | --- |
+| `Cannot find module .../sessionCrypto.js` | dist agent-strategy stale di `agents/*/node_modules`. `git pull`, build strategy, **`pnpm install` di tiap `agents/<nama>/app/agent`**, baru `pm2 delete all && pm2 start` |
 | `pm2 status` indexer `errored` | `pm2 logs indexer`; `.env.local` 600 ada; `pnpm install --filter indexer` |
 | `Database schema required` / `DATABASE_SCHEMA` | `ponder start` tidak punya default schema. Isi `DATABASE_SCHEMA=ponder` di indexer `.env.local` (bukan `amm`), `git pull` (script sudah `--schema ponder`), lalu `pm2 delete all && pm2 start ecosystem.config.cjs` |
 | health loopback gagal | `docker compose ps`; `DATABASE_URL` |

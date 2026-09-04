@@ -1,8 +1,21 @@
+import { createDecipheriv, createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import type { Session } from "@altananetwork/sdk";
 import { deserializeSession } from "@bnbagent/sdk/wallets";
-import { decryptEnvelope } from "./sessionCrypto.js";
+
+/** Same AES-256-GCM blob as apps/indexer/src/crypto.ts. Decrypt only in agent memory. */
+function decryptEnvelope(blob: string, secret: string): string {
+  const key = createHash("sha256").update(secret, "utf8").digest();
+  const raw = Buffer.from(blob, "base64");
+  if (raw.length < 29) throw new Error("cipher too short");
+  const iv = raw.subarray(0, 12);
+  const tag = raw.subarray(12, 28);
+  const enc = raw.subarray(28);
+  const decipher = createDecipheriv("aes-256-gcm", key, iv);
+  decipher.setAuthTag(tag);
+  return Buffer.concat([decipher.update(enc), decipher.final()]).toString("utf8");
+}
 
 /**
  * Load user Altana sessions for strategy ticks.
