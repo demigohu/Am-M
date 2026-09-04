@@ -31,6 +31,13 @@ Kalau VPS bocor, penyerang dapat session berbatas (cap harian + expiry), bukan a
 ## 2. Prasyarat server
 
 - Ubuntu 24.04 (atau setara), **Node.js ≥ 22**, `pnpm`, `git`, **pm2** (`npm i -g pm2`)
+- **Docker Engine + Compose** (Postgres indexer, §7.1). Cek: `docker compose version`. Belum ada:
+
+```bash
+sudo apt install -y docker.io docker-compose-v2
+sudo usermod -aG docker "$USER"
+# logout/login SSH sekali, lalu: docker ps
+```
 - `bag --version` **0.0.13** di **Mac** (register 8004 dari laptop)
 - Domain **ammlabs.fun**. Empat subdomain (A2A hidup di `/`, bukan path):
 
@@ -182,7 +189,11 @@ ERC8183_AGENT_URL=https://healthfactor.ammlabs.fun/erc8183
 BNB_TESTNET_RPC_URL=https://bsc-testnet-rpc.publicnode.com
 TICK_INTERVAL_MS=120000
 
-# Demo sebelum FE (opsional; hire publik lewat ingest, §7.1):
+# Hire dari FE lewat indexer (§7.1) — secret sama dengan apps/indexer/.env.local:
+INDEXER_SECRET=
+SESSION_KEY_ENCRYPTION_KEY=
+
+# Demo sebelum FE (opsional; jangan dipakai kalau indexer sudah hijau):
 # USER_SESSION_FILE=/opt/am-m/agents/healthfactor/.studio/user-session.json
 ```
 
@@ -348,87 +359,240 @@ pm2 logs indexer
 pm2 restart all
 ```
 
-### 7.1 Indexer + session (hire dari FE)
+### 7.1 Indexer — tutorial deploy (Postgres + Ponder + hire FE)
 
-PRD: session user dikirim HTTPS ke VPS, **terenkripsi di Postgres**, agent dekripsi di memori tick. Ponder index Keystore / eksekusi / $U hire / konteks mainnet.
+Hire dari FE **tidak** nyimpan session di disk VPS. Alurnya:
 
-1. Postgres (Docker) + secret (jangan commit, jangan `NEXT_PUBLIC_*`):
+```
+browser  →  Next /api/sessions  →  HTTPS /indexer/v1/sessions
+         →  Postgres (envelope AES-256-GCM)
+         →  agent tick: GET loopback :42069, dekripsi di memori
+```
+
+Ponder (pm2 `indexer`) juga nge-index testnet (Keystore, $U ke seller, eksekusi) + konteks mainnet (APR Venus / tick PCS). **Satu** URL publik: `https://healthfactor.ammlabs.fun/indexer/`. Tiga subdomain agent lain tidak perlu path ini.
+
+Jangan commit secret. Jangan `NEXT_PUBLIC_*` untuk `INDEXER_SECRET` / `SESSION_KEY_ENCRYPTION_KEY`. Jangan `cat` envelope. Port **5432** dan **42069** hanya loopback (§2).
+
+Path di bawah: clone di `/opt/am-m`. Kalau clone di `~/Am-M`, ganti prefix-nya.
+
+#### A. Postgres
 
 ```bash
-openssl rand -hex 32   # INDEXER_SECRET
-openssl rand -hex 32   # SESSION_KEY_ENCRYPTION_KEY
 cd /opt/am-m
 docker compose up -d postgres
-# DATABASE_URL=postgres://amm:amm@127.0.0.1:5432/amm
+docker compose ps
+docker compose exec postgres pg_isready -U amm -d amm
 ```
 
-2. Indexer env:
+`ps` harus `Up (healthy)`. Default user/db/password = `amm` (lihat `docker-compose.yml`). URL yang dipakai indexer:
+
+```
+postgres://amm:amm@127.0.0.1:5432/amm
+```
+
+Kalau kamu set `POSTGRES_PASSWORD` di environment Docker, ganti password di URL itu.
+
+#### B. Dua secret (generate sekali, pakai di tiga tempat)
 
 ```bash
+openssl rand -hex 32
+openssl rand -hex 32
+```
+
+Baris pertama = `INDEXER_SECRET` (Bearer FE → indexer, dan agent → indexer).  
+Baris kedua = `SESSION_KEY_ENCRYPTION_KEY` (enkripsi at-rest; indexer encrypt, agent decrypt).
+
+Simpan di password manager. Kalau salah satu beda antar file, hire masuk DB tapi agent **idle**. Kalau encryption key dirotasi, hire lama tidak bisa didekripsi — hire ulang.
+
+Tiga tempat yang **wajib sama**:
+
+| File | `INDEXER_SECRET` | `SESSION_KEY_ENCRYPTION_KEY` | `INDEXER_URL` |
+| --- | --- | --- | --- |
+| `apps/indexer/.env.local` | ya | ya | — (dia server-nya) |
+| empat `agents/<nama>/.studio/.env.local` | ya | ya | ecosystem set `http://127.0.0.1:42069` |
+| Mac / Vercel `apps/web/.env.local` | ya | **jangan** | `https://healthfactor.ammlabs.fun/indexer` |
+
+FE tidak butuh encryption key — dia kirim envelope, indexer yang mengunci.
+
+#### C. Env indexer
+
+```bash
+cd /opt/am-m
 cp apps/indexer/.env.example apps/indexer/.env.local
 chmod 600 apps/indexer/.env.local
-# isi DATABASE_URL, INDEXER_SECRET, SESSION_KEY_ENCRYPTION_KEY
-cd apps/indexer && pnpm install && cd ../..
+nano apps/indexer/.env.local
 ```
 
-3. Secret yang sama di **empat** `agents/<nama>/.studio/.env.local`:
+Isi **lengkap** (ganti dua secret):
 
 ```
-INDEXER_SECRET=<sama>
-SESSION_KEY_ENCRYPTION_KEY=<sama>
-AMM_DESK=guard   # rebalance / grid / yield — ecosystem juga set ini
+DATABASE_URL=postgres://amm:amm@127.0.0.1:5432/amm
+DATABASE_SCHEMA=ponder
+INDEXER_SECRET=<output openssl pertama>
+SESSION_KEY_ENCRYPTION_KEY=<output openssl kedua>
+BNB_TESTNET_RPC_URL=https://bsc-testnet-rpc.publicnode.com
+BNB_MAINNET_RPC_URL=https://bsc-rpc.publicnode.com
 ```
 
-4. Nginx: `location /indexer/` di site **healthfactor** (§6.1), `sudo nginx -t && sudo systemctl reload nginx`.
+`ponder start` **wajib** schema sendiri (`ponder`). Jangan pakai `amm` — itu tabel session `amm.user_session`. Tanpa `DATABASE_URL`, Ponder jatuh ke PGlite dan hire 500/502.
 
-5. pm2 (bukan `restart --update-env`):
+Install package indexer (dari akar repo, karena workspace pnpm):
 
 ```bash
-(cd packages/agent-strategy && pnpm build)
-pm2 delete all
-pm2 start ecosystem.config.cjs
-pm2 save
+cd /opt/am-m
+CI=true pnpm install --filter indexer
 ```
 
-Harus ada lima app: empat agent + `indexer`. Postgres di Docker, bukan pm2.
+#### D. Env empat agent
 
-6. Mac `apps/web/.env.local` (restart Next):
-
-```
-INDEXER_URL=https://healthfactor.ammlabs.fun/indexer
-INDEXER_SECRET=<secret yang sama>
-```
-
-Hire persist 500 kalau URL/secret tidak berpasangan; 502 kalau indexer down. Grant on-chain tetap terjadi — hire ulang setelah indexer hijau.
-
-Cek:
+Tambah **dua baris yang sama** ke tiap `.studio/.env.local` (secret identik dengan indexer). `AMM_DESK` dan `INDEXER_URL` **sudah** di-set ecosystem (`guard` / `rebalance` / `grid` / `yield` + `http://127.0.0.1:42069`) — tidak perlu ditulis ulang, jangan ditimpa URL publik.
 
 ```bash
-curl -sS https://healthfactor.ammlabs.fun/indexer/v1/health
-curl -sS -o /dev/null -w '%{http_code}\n' \
-  -X POST https://healthfactor.ammlabs.fun/indexer/v1/sessions \
-  -H 'content-type: application/json' -d '{}'
+nano /opt/am-m/agents/healthfactor/.studio/.env.local
+nano /opt/am-m/agents/rebalancing/.studio/.env.local
+nano /opt/am-m/agents/gridtrading/.studio/.env.local
+nano /opt/am-m/agents/yieldrouter/.studio/.env.local
 ```
 
-Health `{ ok: true }`. POST tanpa Bearer harus `401`. GraphQL: `/indexer/graphql`.
+```
+INDEXER_SECRET=<sama dengan indexer>
+SESSION_KEY_ENCRYPTION_KEY=<sama dengan indexer>
+```
 
-Jangan `cat` / paste envelope. Hire lama di Mac `.data/sessions/` **tidak** otomatis masuk DB — hire ulang.
+`chmod 600` file itu kalau belum.
 
-`/strategy` idle sampai indexer mengembalikan session untuk `AMM_DESK` itu. Tick Rebalance butuh Venus USDT + WBNB di vault; kalau tidak, `blocked`.
+#### E. Nginx — sisipkan di server **443**, bukan di redirect 80
 
-Setelah `git pull` di VPS:
+Blok `location /indexer/` di §6.1 harus ada di `server { listen 443 ssl; … }` file `/etc/nginx/sites-available/healthfactor.ammlabs.fun`. **Di atas** `location /`. Trailing slash di `location` dan `proxy_pass` wajib (`/indexer/` → `http://127.0.0.1:42069/`), supaya `/indexer/v1/health` jadi `/v1/health`.
+
+Setelah certbot, server `listen 80` biasanya cuma `return 301` ke HTTPS. Kalau `/indexer/` hanya di situ, curl HTTPS dapat 404/502.
 
 ```bash
-cd ~/Am-M   # atau /opt/am-m
-(cd packages/agent-strategy && pnpm build)
-(cd apps/indexer && pnpm install)
+sudo grep -n "listen 443\|location /" /etc/nginx/sites-available/healthfactor.ammlabs.fun
+sudo nano /etc/nginx/sites-available/healthfactor.ammlabs.fun
+```
+
+Tempel di dalam blok 443, **sebelum** `location /`:
+
+```nginx
+    location /indexer/ {
+        client_max_body_size 256k;
+        proxy_pass http://127.0.0.1:42069/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 300s;
+    }
+```
+
+Tiga site agent lain **jangan** ditambah path ini.
+
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+#### F. Build + pm2 (lima app)
+
+`pm2 restart --update-env` **tidak** membaca `.env.local` baru. Setelah env indexer/agent berubah:
+
+```bash
+cd /opt/am-m
+(cd packages/agent-strategy && pnpm install && pnpm build)
+CI=true pnpm install --filter indexer
 for a in healthfactor rebalancing gridtrading yieldrouter; do
   (cd "agents/$a/app/agent" && pnpm build)
 done
 pm2 delete all
 pm2 start ecosystem.config.cjs
 pm2 save
+pm2 status
 ```
+
+Harus ada **lima** app `online`: `healthfactor`, `rebalancing`, `gridtrading`, `yieldrouter`, `indexer`. Postgres tetap Docker, bukan pm2.
+
+```bash
+pm2 logs indexer --lines 40 --nostream
+```
+
+Yang wajar: Ponder start, listen `:42069`, indexing chain 97/56. Yang tidak wajar: restart loop, `DATABASE_URL` kosong, `EADDRINUSE 42069`, `Cannot find package 'ponder'`.
+
+Cek env agent (bukan indexer):
+
+```bash
+pm2 env 0 | grep -E 'INDEXER_URL|AMM_DESK|INDEXER_SECRET|SESSION_KEY'
+```
+
+`INDEXER_URL` harus `http://127.0.0.1:42069`. `AMM_DESK` harus `guard` untuk healthfactor (id 0). Secret boleh terlihat di `pm2 env` — jangan paste ke chat.
+
+#### G. Cek berjenjang (VPS dulu, baru HTTPS)
+
+```bash
+# 1) proses hidup di loopback
+curl -sS http://127.0.0.1:42069/v1/health
+# harus {"ok":true}
+
+# 2) nginx TLS
+curl -sS https://healthfactor.ammlabs.fun/indexer/v1/health
+# harus {"ok":true}
+
+# 3) write tanpa Bearer ditolak
+curl -sS -o /dev/null -w '%{http_code}\n' \
+  -X POST https://healthfactor.ammlabs.fun/indexer/v1/sessions \
+  -H 'content-type: application/json' -d '{}'
+# harus 401
+```
+
+GraphQL (read on-chain): `https://healthfactor.ammlabs.fun/indexer/graphql`.
+
+Kalau (1) OK dan (2) gagal → nginx 443 / trailing slash. Kalau (1) gagal → pm2 indexer / Postgres.
+
+#### H. FE (Mac lokal, atau Vercel nanti)
+
+`apps/web/.env.local` di mesin yang menjalankan Next (bukan di VPS, kecuali FE juga di VPS):
+
+```
+INDEXER_URL=https://healthfactor.ammlabs.fun/indexer
+INDEXER_SECRET=<sama dengan indexer>
+```
+
+Restart Next (`bag` / `pnpm dev`). Tanpa pasangan URL+secret, persist hire **500**. Indexer down → **502**. Grant on-chain bisa tetap sukses — hire ulang setelah G hijau.
+
+Hire lama di Mac `apps/web/.data/sessions/` **tidak** pindah ke Postgres. Jangan copy file itu ke VPS.
+
+`/strategy` idle sampai indexer punya baris `status=active` untuk `AMM_DESK` desk itu. Tick Rebalance butuh Venus USDT + WBNB di vault; kalau tidak, `blocked` (bukan salah indexer).
+
+#### I. Setelah `git pull` di VPS
+
+```bash
+cd /opt/am-m
+git pull
+(cd packages/agent-strategy && pnpm install && pnpm build)
+CI=true pnpm install --filter indexer
+for a in healthfactor rebalancing gridtrading yieldrouter; do
+  (cd "agents/$a" && pnpm install)
+  (cd "agents/$a/app/agent" && pnpm build)
+done
+pm2 delete all
+pm2 start ecosystem.config.cjs
+pm2 save
+curl -sS https://healthfactor.ammlabs.fun/indexer/v1/health
+```
+
+#### J. Kalau rusak
+
+| Gejala | Cek |
+| --- | --- |
+| `pm2 status` indexer `errored` | `pm2 logs indexer`; `.env.local` 600 ada; `pnpm install --filter indexer` |
+| `Database schema required` / `DATABASE_SCHEMA` | `ponder start` tidak punya default schema. Isi `DATABASE_SCHEMA=ponder` di indexer `.env.local` (bukan `amm`), `git pull` (script sudah `--schema ponder`), lalu `pm2 delete all && pm2 start ecosystem.config.cjs` |
+| health loopback gagal | `docker compose ps`; `DATABASE_URL` |
+| HTTPS health 404/502, loopback OK | `location /indexer/` di **443**, trailing slash, `nginx -t` |
+| POST Bearer tetap 401 | `INDEXER_SECRET` FE ≠ indexer (spasi/newline) |
+| hire 500 di Next | `INDEXER_URL` xor `INDEXER_SECRET` di FE |
+| hire 502 di Next | indexer down / nginx |
+| agent `/strategy` idle setelah hire | encryption key beda; `AMM_DESK`; `pm2 env` `INDEXER_URL` |
+| Ponder sync dari genesis lama | set `PONDER_START_BLOCK_97` / `_56` di indexer `.env.local`, restart indexer |
 
 ---
 
@@ -485,7 +649,6 @@ Storage `kind = local` di VPS **boleh**. IPFS hanya jika deliverable harus tahan
 
 - Delapan identitas (varian agresif)
 - Frontend Vercel + passkey `/account` (Vercel FS ephemeral — tetap butuh `INDEXER_URL` + `INDEXER_SECRET`, §7.1)
-- Indexer Ponder + Postgres
 - Laporan TermiX
 
 Urutan setelah 4 URL publik hijau: register 8004 (§9), baru FE.

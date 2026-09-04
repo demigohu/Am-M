@@ -47,6 +47,9 @@ module.exports = {
       cwd: root,
       interpreter: "none",
       env_file: path.join(root, "apps/indexer/.env.local"),
+      env: {
+        DATABASE_SCHEMA: "ponder",
+      },
       max_restarts: 20,
       restart_delay: 5000,
       time: true,

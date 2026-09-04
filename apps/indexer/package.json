@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "ponder dev --port 42069",
-    "start": "ponder start --port 42069",
+    "dev": "ponder dev --port 42069 --schema ponder",
+    "start": "ponder start --port 42069 --schema ponder",
     "codegen": "ponder codegen",
     "lint": "node -e \"process.exit(0)\"",
     "check-types": "ponder codegen"
