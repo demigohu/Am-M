@@ -254,7 +254,7 @@ export const AGENTS: Agent[] = [
     pair: "WBNB / USDT (Venus) fee 100",
     lastAction: "—",
     wallet: "0x6229A7A8271f5aFDE25b66d708E55F38e1979e3F",
-    registryId: 0,
+    registryId: 2198,
     endpoint: "https://rebalancingagg.ammlabs.fun/",
     strategyUrl: "https://rebalancingagg.ammlabs.fun/strategy",
     summary:
@@ -291,7 +291,7 @@ export const AGENTS: Agent[] = [
     pair: "WBNB / USDT (Venus) fee 100",
     lastAction: "—",
     wallet: "0xf9b44A87fe308B9323C831c1e7ffAC9Bc9335cdb",
-    registryId: 0,
+    registryId: 2199,
     endpoint: "https://gridtradingagg.ammlabs.fun/",
     strategyUrl: "https://gridtradingagg.ammlabs.fun/strategy",
     summary:
@@ -323,7 +323,7 @@ export const AGENTS: Agent[] = [
     pair: "vUSDT / vUSDC / vBNB",
     lastAction: "—",
     wallet: "0x5fEB58a1aC652F374CAd1091ccD7141c56e47Cc8",
-    registryId: 0,
+    registryId: 2200,
     endpoint: "https://yieldrouteragg.ammlabs.fun/",
     strategyUrl: "https://yieldrouteragg.ammlabs.fun/strategy",
     summary:
@@ -358,7 +358,7 @@ export const AGENTS: Agent[] = [
     pair: "Venus account",
     lastAction: "—",
     wallet: "0xA465C9B4730b8FfD1E5AaB19b3D98A703219d433",
-    registryId: 0,
+    registryId: 2197,
     endpoint: "https://healthfactoragg.ammlabs.fun/",
     strategyUrl: "https://healthfactoragg.ammlabs.fun/strategy",
     summary:

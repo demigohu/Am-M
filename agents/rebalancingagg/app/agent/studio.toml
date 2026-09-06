@@ -42,4 +42,5 @@ max_per_month_usd = 15.0
 
 [identity]
 endpoint = "https://rebalancingagg.ammlabs.fun/"
-agent_id = 0
+agent_id = 2198
+registered_at = "2026-09-06T22:03:52.094Z"
