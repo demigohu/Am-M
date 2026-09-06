@@ -13,7 +13,7 @@ kind = "altana"
 keystore_dir = "../../.studio/wallets"
 session_file = "../../.studio/wallets/altana-session.json"
 # Run `bag wallet new` in agents/healthfactoragg — then update wallet + registryId in apps/web/lib/catalog.ts
-address = "0xA465C9B4730b8FfD1E5AaB19b3D98A703219d433"
+address = "0x0000000000000000000000000000000000000000"
 
 [llm]
 provider = "openai"
@@ -42,5 +42,4 @@ max_per_month_usd = 15.0
 
 [identity]
 endpoint = "https://healthfactoragg.ammlabs.fun/"
-# agent_id filled after: bag erc8004 register --endpoint https://healthfactoragg.ammlabs.fun/
 agent_id = 0

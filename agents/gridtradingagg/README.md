@@ -1,17 +1,11 @@
 # gridtradingagg (aggressive variant)
 
-Shares `app/agent/src` with `agents/gridtrading`. Separate wallet, `.studio/`, and pm2 process.
-
-## Local / VPS setup
+Shares `app/agent/src` with `agents/gridtrading` via relative symlinks. Run `../../scripts/scaffold-aggressive-agents.sh` after git clone on VPS.
 
 ```bash
 cd agents/gridtradingagg
-cp .env.example .studio/.env.local   # fill WALLET_PASSWORD, indexer secrets
+cp .env.example .studio/.env.local
 cd app/agent && pnpm install && pnpm build
-bag wallet new                        # updates studio.toml address
+bag wallet new
 bag erc8004 register --endpoint https://gridtradingagg.ammlabs.fun/
 ```
-
-Then update `apps/web/lib/catalog.ts` → `gridtradingagg` entry: `wallet`, `registryId`, `endpoint`.
-
-`AGENT_VARIANT=aggressive` is set in `ecosystem.config.cjs` (pm2 env).

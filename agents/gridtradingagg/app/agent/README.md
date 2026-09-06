@@ -1,1 +1,1 @@
-/Users/demigohu/Develop/Am-M/agents/gridtrading/app/agent/README.md
+../../../gridtrading/app/agent/README.md
