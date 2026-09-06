@@ -12,7 +12,7 @@ import {
   formatSessionBudgetSummary,
   type SessionBudgetInput,
 } from "../../lib/altana/sessionBudget";
-import { DESK_PROVIDER, type Agent, type Desk } from "../../lib/catalog";
+import { type Agent, type Desk } from "../../lib/catalog";
 import { DESK_HEX } from "../../lib/stitch-styles";
 import { formatU, shortAddress } from "../../lib/format";
 
@@ -156,7 +156,7 @@ export function HireCheckoutView({ agent, desk }: { agent: Agent; desk: Desk }) 
           <div className="mt-6 flex items-center justify-between px-2 font-mono text-[11px] text-char">
             <div className="flex items-center gap-1.5">
               <Icon name="verified_user" />
-              <span>Provider {shortAddress(DESK_PROVIDER[agent.desk])}</span>
+              <span>Provider {shortAddress(agent.wallet)}</span>
             </div>
             <span>ERC-8004 #{agent.registryId}</span>
           </div>

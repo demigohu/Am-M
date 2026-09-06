@@ -1,0 +1,6 @@
+.studio/
+agentcore/.env.local
+node_modules/
+dist/
+.pnpm-store/
+.DS_Store

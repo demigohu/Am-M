@@ -16,7 +16,7 @@ Am-M/                          ← Turbo + Next.js (marketplace FE, belakangan)
     gridtrading/
 ```
 
-Cara jalan lokal: dokumen ini. Deploy VPS + listing ERC-8004: [`DEPLOY.md`](./DEPLOY.md) — **VPS dulu, baru `bag erc8004 register`**.
+Cara jalan lokal: dokumen ini. Deploy VPS + listing ERC-8004: `[DEPLOY.md](./DEPLOY.md)` — **VPS dulu, baru** `bag erc8004 register`.
 
 `pnpm dev` di **akar repo** hanya nyalain Next.js starter. Agent **tidak** ikut.
 
@@ -26,11 +26,11 @@ Cara jalan lokal: dokumen ini. Deploy VPS + listing ERC-8004: [`DEPLOY.md`](./DE
 
 `bag init` membuat **satu seller = satu proyek = satu signer**.
 
-| Yang tidak boleh dibagi | Alasan |
-|---|---|
+| Yang tidak boleh dibagi | Alasan                                                                                                                                                                   |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Folder `agents/<nama>/` | CLI `bag` mengunci `studio.toml`, `.studio/wallets/`, port, dan `pnpm-workspace.yaml` per proyek. Nama init tidak boleh `-`/`_` (`healthfactor`, bukan `health-factor`). |
-| Wallet Altana per agent | Identitas ERC-8004 + penerima $U (ERC-8183) harus alamat sendiri. Session `bag wallet session grant` terikat alamat itu. |
-| Proses Node per agent | Loop tick 24/7. Satu proses crash tidak boleh mematikan desk lain. Port: 9001–9004. |
+| Wallet Altana per agent | Identitas ERC-8004 + penerima $U (ERC-8183) harus alamat sendiri. Session `bag wallet session grant` terikat alamat itu.                                                 |
+| Proses Node per agent   | Loop tick 24/7. Satu proses crash tidak boleh mematikan desk lain. Port: 9001–9004.                                                                                      |
 
 Dana **user** tidak masuk wallet agent. Wallet agent cuma gas + terima $U + daftar 8004. Posisi DeFi hidup di smart account user, lewat session yang di-grant saat hire.
 
@@ -89,7 +89,7 @@ bag wallet new
 # faucet tBNB: https://www.bnbchain.org/en/testnet-faucet
 # faucet $U:   https://united-coin-u.github.io/u-faucet/
 
-bag wallet session grant --budget-u 10 --expiry-days 30 --yes
+bag wallet session grant --force --budget-u 5 --expiry-days 90 --yes
 cd ../..
 bag doctor
 bag dev
@@ -163,12 +163,12 @@ Tick parkir USDT/USDC/BNB idle ke vToken yang matching. Jangan copy session Grid
 
 Tiap terminal, dari folder agent-nya:
 
-| Agent | `AGENT_PORT` |
-|---|---|
-| healthfactor | 9001 |
-| rebalancing | 9002 |
-| gridtrading | 9003 |
-| yieldrouter | 9004 |
+| Agent        | `AGENT_PORT` |
+| ------------ | ------------ |
+| healthfactor | 9001         |
+| rebalancing  | 9002         |
+| gridtrading  | 9003         |
+| yieldrouter  | 9004         |
 
 `bag dev` mengunci port **sebelum** subprocess: `AGENT_PORT=9002 bag dev` **tidak** cukup — CLI tetap probe 9000. Pakai `--port`:
 

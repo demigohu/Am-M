@@ -53,22 +53,32 @@ sudo usermod -aG docker "$USER"
 | rebalancing  | 9002         | `https://rebalancing.ammlabs.fun/`  | `0x7f3FA089a0D2F0c48d7EcacF843a03D69793C878` |
 | gridtrading  | 9003         | `https://gridtrading.ammlabs.fun/`  | `0xB4E7De3592E237ceE295499f2D3d876A378698C6` |
 | yieldrouter  | 9004         | `https://yieldrouter.ammlabs.fun/`  | `0x670F9ECAfd03215cE3094097d8172bC3B212Fc6c` |
+| healthfactoragg | 9005      | `https://healthfactoragg.ammlabs.fun/` | *(bag wallet new)* |
+| rebalancingagg  | 9006      | `https://rebalancingagg.ammlabs.fun/`  | *(bag wallet new)* |
+| gridtradingagg  | 9007      | `https://gridtradingagg.ammlabs.fun/`  | *(bag wallet new)* |
+| yieldrouteragg  | 9008      | `https://yieldrouteragg.ammlabs.fun/`  | *(bag wallet new)* |
 
 
-Di DNS registrar, **empat record A** (atau CNAME ke host VPS) ke IP VPS:
+Conservative = `AGENT_VARIANT=conservative` (default). Aggressive = sibling workspace `agents/*agg` + port 9005–9008. Scaffold: `./scripts/scaffold-aggressive-agents.sh` (symlinks source, own `studio.toml` + wallet).
+
+Di DNS registrar, **empat record A** (atau CNAME ke host VPS) ke IP VPS — atau wildcard `*.ammlabs.fun`:
 
 ```
 healthfactor.ammlabs.fun    A    <IP_VPS>
 rebalancing.ammlabs.fun     A    <IP_VPS>
 gridtrading.ammlabs.fun     A    <IP_VPS>
 yieldrouter.ammlabs.fun     A    <IP_VPS>
+healthfactoragg.ammlabs.fun A    <IP_VPS>
+rebalancingagg.ammlabs.fun  A    <IP_VPS>
+gridtradingagg.ammlabs.fun  A    <IP_VPS>
+yieldrouteragg.ammlabs.fun  A    <IP_VPS>
 ```
 
 Apex `ammlabs.fun` boleh ditunda — itu untuk FE nanti, bukan keempat agent. Jangan pakai `ammlabs.fun/healthfactor`: scaffold tidak di-mount di path, `/.well-known/agent-card.json` akan salah host.
 
 Opsional: satu wildcard `*.ammlabs.fun A <IP_VPS>` kalau mau 8 listing nanti tanpa nambah record satu-satu. Caddy tetap butuh blok `host { }` per nama.
 
-Firewall: **80/443** ke dunia. Port 9001–9004, 9000, 8088, **42069**, **5432** **hanya loopback**.
+Firewall: **80/443** ke dunia. Port 9001–**9008**, 9000, 8088, **42069**, **5432** **hanya loopback**.
 
 **9router** harus reachable dari VPS (bukan `127.0.0.1` di Mac). Tanpa itu tick DeFi tetap jalan; penjelasan LLM di deliverable 8183 jatuh ke JSON mentah.
 
@@ -283,6 +293,10 @@ Tiga file lain: ganti `server_name` + `proxy_pass`:
 | `rebalancing.ammlabs.fun`  | `rebalancing.ammlabs.fun`  | `http://127.0.0.1:9002` |
 | `gridtrading.ammlabs.fun`  | `gridtrading.ammlabs.fun`  | `http://127.0.0.1:9003` |
 | `yieldrouter.ammlabs.fun`  | `yieldrouter.ammlabs.fun`  | `http://127.0.0.1:9004` |
+| `healthfactoragg.ammlabs.fun` | `healthfactoragg.ammlabs.fun` | `http://127.0.0.1:9005` |
+| `rebalancingagg.ammlabs.fun`  | `rebalancingagg.ammlabs.fun`  | `http://127.0.0.1:9006` |
+| `gridtradingagg.ammlabs.fun`  | `gridtradingagg.ammlabs.fun`  | `http://127.0.0.1:9007` |
+| `yieldrouteragg.ammlabs.fun`  | `yieldrouteragg.ammlabs.fun`  | `http://127.0.0.1:9008` |
 
 
 Aktifkan + tes (pm2 agent boleh belum nyala; nginx tetap `ok` asalkan sintaks benar):
@@ -662,6 +676,8 @@ Card: `url` HTTPS publik, skills `negotiate` + `notify_funded`, **tanpa** OAuth 
 
 ## 9. Listing ERC-8004 (setelah HTTPS hidup)
 
+### 9.1 Conservative (4)
+
 Dari **Mac**, di folder agent (`WALLET_PASSWORD` tetap di mesin ini):
 
 ```bash
@@ -679,7 +695,32 @@ cd ../yieldrouter
 bag erc8004 register --endpoint https://yieldrouter.ammlabs.fun/
 ```
 
-Ini **4 listing** on-chain. Varian agresif (jadi 8) = proyek + wallet + session + proses + subdomain **baru**.
+### 9.2 Aggressive (4) — wallet + catalog
+
+Workspace sudah di-scaffold (`agents/*agg`). Di **VPS** (setelah nginx + cert untuk subdomain agg):
+
+```bash
+cd ~/Am-M
+./scripts/scaffold-aggressive-agents.sh   # idempotent; skip jika folder sudah ada
+
+for a in healthfactoragg rebalancingagg gridtradingagg yieldrouteragg; do
+  cp agents/$a/.env.example agents/$a/.studio/.env.local
+  chmod 600 agents/$a/.studio/.env.local
+  # isi WALLET_PASSWORD + INDEXER_SECRET + SESSION_KEY_ENCRYPTION_KEY (sama indexer)
+  cd agents/$a/app/agent && pnpm install && pnpm build && cd -
+  cd agents/$a && bag wallet new && bag erc8004 register --endpoint https://$a.ammlabs.fun/
+done
+
+pnpm --filter @am-m/agent-strategy build
+pm2 start ecosystem.config.cjs --only healthfactoragg,rebalancingagg,gridtradingagg,yieldrouteragg
+pm2 save
+```
+
+Setelah `bag wallet new` + `bag erc8004 show`, update **`apps/web/lib/catalog.ts`** untuk masing-masing `*agg`: `wallet`, `registryId`, dan pastikan `endpoint`/`strategyUrl` HTTPS.
+
+Hire ke aggressive menulis `agentId` (mis. `yieldrouteragg`) ke indexer — proses conservative **tidak** akan memakai session itu (`AMM_AGENT_ID` di ecosystem).
+
+Ini **8 listing** on-chain total.
 
 ---
 
@@ -699,8 +740,8 @@ Storage `kind = local` di VPS **boleh**. IPFS hanya jika deliverable harus tahan
 
 ## 11. Yang belum termasuk dokumen ini
 
-- Delapan identitas (varian agresif)
+- ~~Delapan identitas (varian agresif)~~ → §9.2 + `ecosystem.config.cjs` ports 9005–9008
 - Frontend Vercel + passkey `/account` (Vercel FS ephemeral — tetap butuh `INDEXER_URL` + `INDEXER_SECRET`, §7.1)
 - Laporan TermiX
 
-Urutan setelah 4 URL publik hijau: register 8004 (§9), baru FE.
+Urutan setelah 8 URL publik hijau: register 8004 (§9), update `catalog.ts` wallets, baru FE.

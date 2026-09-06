@@ -25,7 +25,7 @@ import { sleep, withNonceRetry } from "../../lib/altana/retry";
 import { serializeSessionEnvelope } from "../../lib/altana/sessionEnvelope";
 import { getStoredWallet, upsertHire } from "../../lib/altana/storage";
 import { openWallet } from "../../lib/altana/wallet";
-import { DESK_PROVIDER, type Agent, type Desk } from "../../lib/catalog";
+import { type Agent, type Desk } from "../../lib/catalog";
 import { formatU } from "../../lib/format";
 
 export function HirePanel({
@@ -151,7 +151,7 @@ export function HirePanel({
             opened.wallet,
             opened.signer,
             {
-              provider: DESK_PROVIDER[agent.desk],
+              provider: agent.wallet,
               task: `Am-M hire ${agent.name} (${agent.id})`,
               budget: BigInt(agent.priceWei),
             },

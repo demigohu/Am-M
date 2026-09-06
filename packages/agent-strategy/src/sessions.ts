@@ -22,7 +22,7 @@ function decryptEnvelope(blob: string, secret: string): string {
  *
  * Never log the payload — it contains the session private key.
  * Sources (first match wins per entry):
- *   INDEXER_URL + INDEXER_SECRET + AMM_DESK — encrypted rows from apps/indexer
+ *   INDEXER_URL + INDEXER_SECRET + AMM_DESK + AMM_AGENT_ID — encrypted rows from apps/indexer
  *   USER_SESSION          — one serialized session JSON string
  *   USER_SESSION_FILE     — path to one serializeSession() file
  *   USER_SESSIONS_DIR     — directory of *.json files
@@ -70,10 +70,18 @@ async function loadFromIndexer(): Promise<Session[]> {
       return [];
     }
     const body = (await res.json()) as {
-      items?: { envelope?: string; envelopeCipher?: string }[];
+      items?: { agentId?: string; envelope?: string; envelopeCipher?: string }[];
     };
+    const expectedAgentId = process.env.AMM_AGENT_ID?.trim() ?? "";
+    const variant = process.env.AGENT_VARIANT?.trim().toLowerCase() ?? "conservative";
     const out: Session[] = [];
     for (const item of body.items ?? []) {
+      const rowAgentId = item.agentId?.trim() ?? "";
+      if (expectedAgentId) {
+        if (rowAgentId && rowAgentId !== expectedAgentId) continue;
+        // Legacy rows without agentId — only conservative processes pick them up.
+        if (!rowAgentId && variant !== "conservative") continue;
+      }
       try {
         const raw = item.envelope
           ? item.envelope

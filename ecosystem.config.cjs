@@ -8,10 +8,14 @@ const DESK_BY_AGENT = {
   rebalancing: "rebalance",
   gridtrading: "grid",
   yieldrouter: "yield",
+  healthfactoragg: "guard",
+  rebalancingagg: "rebalance",
+  gridtradingagg: "grid",
+  yieldrouteragg: "yield",
 };
 
-/** @param {string} name @param {number} port */
-function app(name, port) {
+/** @param {string} name @param {number} port @param {"conservative"|"aggressive"} [variant] */
+function app(name, port, variant = "conservative") {
   const desk = DESK_BY_AGENT[name];
   return {
     name,
@@ -22,6 +26,8 @@ function app(name, port) {
     env: {
       AGENT_PORT: String(port),
       AGENT_BIND_HOST: "127.0.0.1",
+      AGENT_VARIANT: variant,
+      AMM_AGENT_ID: name,
       PUBLIC_AGENT_URL: `https://${name}.ammlabs.fun`,
       ERC8183_AGENT_URL: `https://${name}.ammlabs.fun/erc8183`,
       USER_SESSIONS_DIR: path.join(root, "data", "sessions", desk),
@@ -40,6 +46,10 @@ module.exports = {
     app("rebalancing", 9002),
     app("gridtrading", 9003),
     app("yieldrouter", 9004),
+    app("healthfactoragg", 9005, "aggressive"),
+    app("rebalancingagg", 9006, "aggressive"),
+    app("gridtradingagg", 9007, "aggressive"),
+    app("yieldrouteragg", 9008, "aggressive"),
     {
       name: "indexer",
       script: "pnpm",
