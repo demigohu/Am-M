@@ -8,7 +8,7 @@
     "start": "ponder start --port 42069 --schema ponder",
     "codegen": "ponder codegen",
     "lint": "node -e \"process.exit(0)\"",
-    "check-types": "ponder codegen"
+    "check-types": "ponder codegen && tsc --noEmit"
   },
   "dependencies": {
     "hono": "^4.7.10",

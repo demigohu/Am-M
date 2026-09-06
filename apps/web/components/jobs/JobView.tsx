@@ -9,6 +9,7 @@ import { urlAltanaKey, urlBscAddress, urlBscTx } from "../../lib/altana/chain";
 import { altanaKeyId } from "../../lib/altana/keystore";
 import { getHire, remainingLabel, type StoredHire } from "../../lib/altana/storage";
 import { formatU, shortAddress } from "../../lib/format";
+import { formatNetYieldLabel, formatGasSpent } from "../../lib/indexer-format";
 import { agentById, deskOf, type DeskSlug } from "../../lib/catalog";
 import { DESK_HEX } from "../../lib/stitch-styles";
 
@@ -21,13 +22,65 @@ type IndexerExecution = {
 
 type IndexerJob = {
   grantTx: string | null;
+  erc8183JobId?: string | null;
   status: string;
   wallet: string;
   keys: { keyId: string; valid: boolean; expiry: string }[];
   executions: IndexerExecution[];
   snapshots: { takenAt: string; vUsdtUnderlying: string; vUsdcUnderlying: string; vBnbUnderlying: string }[];
   payments: { txHash: string; value: string }[];
+  metrics?: {
+    strategyTxCount: number;
+    executionCount: number;
+    positionSummary: string | null;
+    netYieldUsdt: string;
+    gasSpentWei: string;
+  };
+  erc8183?: {
+    status: string;
+    deliverableUrl: string | null;
+    deliverableHash: string | null;
+    jobId: string;
+  } | null;
+  deliverable?: {
+    summary: string | null;
+    payload: unknown;
+  } | null;
 };
+
+function formatUnderlying(raw: string | undefined): string | null {
+  if (!raw || raw === "0") return null;
+  try {
+    const v = BigInt(raw);
+    if (v === 0n) return null;
+    for (const decimals of [18, 6]) {
+      const n = Number(v) / 10 ** decimals;
+      if (Number.isFinite(n) && n >= 0.0001) {
+        return n.toLocaleString(undefined, { maximumFractionDigits: 4 });
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function snapshotSummary(snapshots: IndexerJob["snapshots"]): string | null {
+  const latest = snapshots[0];
+  if (!latest) return null;
+  const usdt = formatUnderlying(latest.vUsdtUnderlying);
+  const usdc = formatUnderlying(latest.vUsdcUnderlying);
+  const bnb = formatUnderlying(latest.vBnbUnderlying);
+  const parts: string[] = [];
+  if (usdt) parts.push(`${usdt} USDT in Venus`);
+  if (usdc) parts.push(`${usdc} USDC in Venus`);
+  if (bnb) parts.push(`${bnb} BNB in Venus`);
+  return parts.length > 0 ? parts.join(" · ") : null;
+}
+
+function hasPositionEvidence(snapshots: IndexerJob["snapshots"]): boolean {
+  return snapshotSummary(snapshots) !== null;
+}
 
 function deliverableExpectation(desk: DeskSlug | undefined): string {
   switch (desk) {
@@ -104,12 +157,29 @@ export function JobView({ jobId }: { jobId: string }) {
   const latestExecution = indexed?.executions?.[0] ?? null;
   const sessionKey = indexed?.keys?.[0] ?? null;
   const snapshotCount = indexed?.snapshots?.length ?? 0;
+  const positionSummary = indexed?.snapshots ? snapshotSummary(indexed.snapshots) : null;
+  const positionDetected = indexed?.snapshots ? hasPositionEvidence(indexed.snapshots) : false;
   const onIndexer = Boolean(indexed);
   const keyId = altanaKeyId(hire.publicKey);
   const keyRegistered =
     hire.status === "revoked" ? false : sessionKey ? sessionKey.valid : true;
+  const erc8183JobId = hire.erc8183JobId ?? indexed?.erc8183JobId ?? indexed?.erc8183?.jobId ?? null;
+  const erc8183Status = indexed?.erc8183?.status ?? null;
+  const deliverableUrl = indexed?.erc8183?.deliverableUrl ?? null;
+  const deskDeliverable = indexed?.deliverable?.summary ?? null;
   const statusLabel =
-    hire.status === "revoked" ? "REVOKED" : hire.erc8183JobId ? "FUNDED" : "SESSION ACTIVE";
+    hire.status === "revoked"
+      ? "REVOKED"
+      : erc8183Status
+        ? erc8183Status
+        : erc8183JobId
+          ? "FUNDED"
+          : "SESSION ACTIVE";
+  const strategyTxCount =
+    indexed?.metrics?.strategyTxCount ??
+    (indexed?.executions ? new Set(indexed.executions.map((e) => e.txHash)).size : 0);
+  const netYieldLabel = formatNetYieldLabel(indexed?.metrics?.netYieldUsdt, "USDT");
+  const gasLabel = formatGasSpent(indexed?.metrics?.gasSpentWei);
 
   return (
     <div className="mx-auto flex w-full max-w-[640px] flex-col gap-6 px-4 py-8 sm:py-12">
@@ -159,7 +229,7 @@ export function JobView({ jobId }: { jobId: string }) {
               <span className="font-mono text-sm font-semibold tracking-wider uppercase">{statusLabel}</span>
             </div>
             <span className="text-[13px] text-char">
-              {hire.erc8183JobId ? `ERC-8183 job ${hire.erc8183JobId}` : "Session grant only"}
+              {erc8183JobId ? `ERC-8183 job ${erc8183JobId}` : "Session grant only"}
             </span>
           </div>
           <span className="font-mono text-[11px] text-char">{remainingLabel(hire.expiry)}</span>
@@ -221,7 +291,7 @@ export function JobView({ jobId }: { jobId: string }) {
             label="Retainer"
             value={
               agent
-                ? `${formatU(agent.priceWei)} $U${hire.erc8183JobId ? " · paid via ERC-8183" : " · session-only if $U empty"}`
+                ? `${formatU(agent.priceWei)} $U${erc8183JobId ? " · paid via ERC-8183" : " · session-only if $U empty"}`
                 : "—"
             }
           />
@@ -241,31 +311,47 @@ export function JobView({ jobId }: { jobId: string }) {
                 value={latestExecution.recipientsVerified ? "Yes — stayed in your vault" : "Review on BscScan"}
               />
               <p className="font-mono text-[11px] text-char">
-                {indexed!.executions.length} ERC-20 transfer tx
-                {indexed!.executions.length === 1 ? "" : "s"} indexed for this session.
+                {strategyTxCount} strategy tx{strategyTxCount === 1 ? "" : "s"} indexed for this session
+                {netYieldLabel ? ` · net yield ${netYieldLabel}` : ""}
+                {gasLabel ? ` · gas ${gasLabel}` : ""}.
               </p>
             </>
           ) : onIndexer ? (
             <div className="rounded-xl border border-ink bg-buttercream p-4">
-              <p className="font-mono text-[11px] font-bold uppercase text-char">
-                No strategy tx indexed yet
-              </p>
-              <ul className="mt-2 space-y-1.5 text-[13px] text-char">
+              {positionDetected ? (
+                <>
+                  <p className="font-mono text-[11px] font-bold uppercase text-status-green">
+                    Position detected on-chain
+                  </p>
+                  <p className="mt-2 text-[13px] text-ink">
+                    <strong>{positionSummary}</strong>
+                  </p>
+                  <p className="mt-2 text-[13px] text-char">
+                    The indexer reads Venus balances directly — this usually means the agent already
+                    opened or adjusted a position. Tx hashes are a separate scan and may lag after a
+                    schema reset.
+                  </p>
+                </>
+              ) : (
+                <p className="font-mono text-[11px] font-bold uppercase text-char">
+                  No Venus / Pancake position detected yet
+                </p>
+              )}
+              <ul className="mt-3 space-y-1.5 text-[13px] text-char">
                 <li>
-                  · Session is on the indexer; Keystore key is{" "}
+                  · Keystore key is{" "}
                   <strong className="text-ink">{sessionKey?.valid ? "valid" : "revoked"}</strong>.
                 </li>
                 {snapshotCount > 0 ? (
                   <li>
-                    · <strong className="text-ink">{snapshotCount}</strong> Venus position snapshot
-                    {snapshotCount === 1 ? "" : "s"} recorded (underlying balances over time).
+                    · <strong className="text-ink">{snapshotCount}</strong> position snapshot
+                    {snapshotCount === 1 ? "" : "s"} recorded.
                   </li>
                 ) : null}
                 <li>
-                  · <strong className="text-ink">0</strong> agent execution txs — indexer only
-                  captures USDT / USDC / WBNB / $U transfers touching your vault during agent ticks.
+                  · <strong className="text-ink">{strategyTxCount}</strong> strategy tx
+                  {strategyTxCount === 1 ? "" : "s"} in the execution log (transfers + contract calls).
                 </li>
-                <li>· Agent may not have ticked yet, or its tx did not emit a tracked token transfer.</li>
               </ul>
             </div>
           ) : (
@@ -298,20 +384,69 @@ export function JobView({ jobId }: { jobId: string }) {
                 </a>
               </p>
               <p className="mt-2 text-[13px] text-char">{deliverableExpectation(desk?.slug)}</p>
-              {hire.erc8183JobId ? (
-                <p className="mt-2 font-mono text-[11px] text-char">
-                  Full ERC-8183 manifest URL: <strong className="text-ink">Not indexed yet</strong>
+              {deskDeliverable ? (
+                <p className="mt-2 text-[13px]">
+                  Agent snapshot: <strong className="text-ink">{deskDeliverable}</strong>
                 </p>
+              ) : null}
+              {erc8183JobId ? (
+                <div className="mt-2 space-y-1 font-mono text-[11px] text-char">
+                  <p>
+                    ERC-8183 job {erc8183JobId}
+                    {erc8183Status ? ` · ${erc8183Status}` : ""}
+                  </p>
+                  {deliverableUrl ? (
+                    <a
+                      href={deliverableUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-bold text-ink underline"
+                    >
+                      Open deliverable manifest
+                    </a>
+                  ) : (
+                    <p>
+                      Manifest URL: <strong className="text-ink">awaiting agent submit</strong>
+                    </p>
+                  )}
+                </div>
               ) : null}
             </div>
           ) : (
             <div className="rounded-xl border border-ink bg-[#f7eeca] p-4">
-              <p className="font-mono text-[11px] font-semibold uppercase">Not indexed yet</p>
-              <p className="mt-2 text-[13px] text-char">{deliverableExpectation(desk?.slug)}</p>
-              {hire.erc8183JobId ? (
-                <p className="mt-2 font-mono text-[11px] text-char">
-                  ERC-8183 job {hire.erc8183JobId} — deliverable manifest will link here once submitted.
+              <p className="font-mono text-[11px] font-semibold uppercase">
+                {positionDetected || deskDeliverable ? "Position live · tx log catching up" : "Not indexed yet"}
+              </p>
+              {positionDetected ? (
+                <p className="mt-2 text-[13px]">
+                  On-chain position: <strong>{positionSummary}</strong>
                 </p>
+              ) : null}
+              {deskDeliverable ? (
+                <p className="mt-2 text-[13px]">
+                  Agent snapshot: <strong>{deskDeliverable}</strong>
+                </p>
+              ) : null}
+              <p className="mt-2 text-[13px] text-char">{deliverableExpectation(desk?.slug)}</p>
+              {erc8183JobId ? (
+                <div className="mt-2 space-y-1 font-mono text-[11px] text-char">
+                  <p>
+                    ERC-8183 job {erc8183JobId}
+                    {erc8183Status ? ` · ${erc8183Status}` : ""}
+                  </p>
+                  {deliverableUrl ? (
+                    <a
+                      href={deliverableUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-bold text-ink underline"
+                    >
+                      Open deliverable manifest
+                    </a>
+                  ) : (
+                    <p>Deliverable manifest will link here once submitted.</p>
+                  )}
+                </div>
               ) : null}
             </div>
           )}

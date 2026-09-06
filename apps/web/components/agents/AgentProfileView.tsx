@@ -3,7 +3,22 @@ import { Icon } from "../ui/Icon";
 import type { Agent, Desk } from "../../lib/catalog";
 import { DESK_HEX } from "../../lib/stitch-styles";
 import { formatU, shortAddress } from "../../lib/format";
-import { ALTANA_EXPLORER, SCAN_8004, urlBscAddress } from "../../lib/altana/chain";
+import { ALTANA_EXPLORER, SCAN_8004, urlBscAddress, urlBscTx } from "../../lib/altana/chain";
+
+type MainnetContext = {
+  venusUsdtAprBps: number;
+  pcsTick: number;
+  label: string;
+} | null;
+
+type RegistryMeta = {
+  name: string | null;
+  updatedAt: string;
+} | null;
+
+function formatAprBps(bps: number): string {
+  return `${(bps / 100).toFixed(2)}%`;
+}
 
 function MetricCell({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
@@ -15,7 +30,19 @@ function MetricCell({ label, value, hint }: { label: string; value: string; hint
   );
 }
 
-export function AgentProfileView({ agent, desk }: { agent: Agent; desk: Desk }) {
+export function AgentProfileView({
+  agent,
+  desk,
+  mainnetContext,
+  registryMeta,
+  recentHireTxs,
+}: {
+  agent: Agent;
+  desk: Desk;
+  mainnetContext?: MainnetContext;
+  registryMeta?: RegistryMeta;
+  recentHireTxs?: Array<{ txHash: string; value: string }>;
+}) {
   const hex = DESK_HEX[agent.desk];
 
   return (
@@ -115,32 +142,62 @@ export function AgentProfileView({ agent, desk }: { agent: Agent; desk: Desk }) 
               <MetricCell label="Last action" value={agent.lastAction} />
               <MetricCell label="Engine" value={agent.engine.split("·").pop()?.trim() ?? agent.engine} />
               <MetricCell label="Pair" value={agent.pair.split(" fee")[0] ?? agent.pair} />
-              <MetricCell label="Reputation" value={agent.reputation != null ? `${agent.reputation}` : "Not indexed yet"} />
+              <MetricCell label="Reputation" value={registryMeta?.name ?? (agent.reputation != null ? `${agent.reputation}` : "8004 synced")} />
             </div>
             <div className="mt-6 rounded-xl bg-[#f7eeca] p-5">
               <div className="mb-3 flex items-center gap-2">
                 <span className="rounded-full bg-ink px-2.5 py-0.5 font-mono text-[11px] font-bold tracking-wider text-bone">
                   Context (mainnet)
                 </span>
-                <span className="text-[13px] font-medium text-char">Not indexed yet</span>
+                <span className="text-[13px] font-medium text-char">
+                  {mainnetContext ? mainnetContext.label : "Awaiting indexer"}
+                </span>
               </div>
               <p className="text-[13px] text-char">
-                Mainnet APR / benchmark figures appear here when the indexer is wired. Testnet execution
-                uses {agent.liveMetric} from /strategy.
+                {mainnetContext ? (
+                  <>
+                    Venus USDT APR ~{formatAprBps(mainnetContext.venusUsdtAprBps)} · PCS tick{" "}
+                    {mainnetContext.pcsTick}. Testnet execution uses {agent.liveMetric} from
+                    /strategy.
+                  </>
+                ) : (
+                  <>
+                    Mainnet APR / benchmark figures appear when the indexer is wired. Testnet
+                    execution uses {agent.liveMetric} from /strategy.
+                  </>
+                )}
               </p>
             </div>
           </section>
 
-          {/* Audit ledger - empty */}
+          {/* Audit ledger */}
           <section className="rounded-[20px] bg-bone p-6 sm:p-7">
             <div className="mb-4 flex items-center gap-3">
               <Icon name="receipt_long" style={{ color: hex }} />
               <h2 className="font-display text-2xl font-bold">Execution Audit Ledger</h2>
             </div>
-            <p className="text-[13px] text-char">
-              Transaction receipts from your hired sessions will appear here. Not indexed yet — grant a
-              session and wait for the seller tick.
-            </p>
+            {recentHireTxs && recentHireTxs.length > 0 ? (
+              <ul className="divide-y divide-ink font-mono text-[13px]">
+                {recentHireTxs.slice(0, 5).map((tx) => (
+                  <li key={tx.txHash} className="flex items-center justify-between py-3">
+                    <a
+                      href={urlBscTx(tx.txHash)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-bold underline"
+                    >
+                      {shortAddress(tx.txHash)}
+                    </a>
+                    <span className="text-char">{formatU(tx.value)} $U hire</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-[13px] text-char">
+                Recent $U hire payments to this seller appear here once indexed. Grant a session from
+                Market to start.
+              </p>
+            )}
           </section>
         </div>
 

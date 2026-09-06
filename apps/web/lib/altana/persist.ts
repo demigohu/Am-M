@@ -33,3 +33,13 @@ export async function deleteSessionFile(id: string): Promise<void> {
     /* local revoke still stands if the file is already gone */
   });
 }
+
+export async function patch8183Job(id: string, erc8183JobId: string): Promise<void> {
+  await fetch(`/api/sessions/${encodeURIComponent(id)}/patch`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ erc8183JobId }),
+  }).catch(() => {
+    /* local hire still stands if indexer patch fails */
+  });
+}

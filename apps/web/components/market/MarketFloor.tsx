@@ -40,6 +40,21 @@ function applyFilters(agents: Agent[], filters: MarketFilters): Agent[] {
   });
 }
 
+type MarketIndexer = {
+  context: {
+    venusUsdtAprBps: number;
+    pcsTick: number;
+    pcsLiquidity: string;
+    label: string;
+    takenAt: string;
+  } | null;
+  agents: Array<{ tokenId: number; desk: string; name: string | null; hireable: boolean }>;
+};
+
+function formatAprBps(bps: number): string {
+  return `${(bps / 100).toFixed(2)}%`;
+}
+
 export function MarketFloor() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -50,6 +65,7 @@ export function MarketFloor() {
     category: categoryFromUrl,
   });
   const [live, setLive] = useState<Record<string, LiveOverlay>>({});
+  const [indexer, setIndexer] = useState<MarketIndexer | null>(null);
   const [asOf, setAsOf] = useState<string | null>(null);
   const [sort, setSort] = useState<MarketSortKey>("name");
   const [sortDesc, setSortDesc] = useState(false);
@@ -95,9 +111,14 @@ export function MarketFloor() {
       try {
         const res = await fetch("/api/market", { cache: "no-store" });
         if (!res.ok) return;
-        const body = (await res.json()) as { at?: string; live?: Record<string, LiveOverlay> };
+        const body = (await res.json()) as {
+          at?: string;
+          live?: Record<string, LiveOverlay>;
+          indexer?: MarketIndexer | null;
+        };
         if (cancelled) return;
         setLive(body.live ?? {});
+        setIndexer(body.indexer ?? null);
         setAsOf(body.at ?? new Date().toISOString());
       } catch {
         /* keep last overlay */
@@ -171,6 +192,16 @@ export function MarketFloor() {
           }}
         />
 
+        {indexer?.context ? (
+          <div className="rounded-xl border border-ink bg-[#f7eeca] px-4 py-3 font-mono text-[11px] text-ink">
+            <span className="mr-2 rounded-full border border-ink bg-bone px-2 py-0.5 font-bold uppercase">
+              Context (mainnet)
+            </span>
+            Venus USDT APR ~{formatAprBps(indexer.context.venusUsdtAprBps)} · PCS WBNB/USDT tick{" "}
+            {indexer.context.pcsTick} · via indexer
+          </div>
+        ) : null}
+
         <StitchMarketTable agents={filteredAgents} onCategoryFilter={onCategoryQuickFilter} />
 
         <div className="flex flex-wrap items-center justify-between gap-2 px-1">
@@ -201,8 +232,18 @@ export function MarketFloor() {
               </h2>
               <p className="text-[15px] text-ink/85">
                 First-party sellers only. ERC-8004 ids 2056–2059 are proof of identity, not a
-                prerequisite to pick a job. Keys stay in your vault; agents operate under session
-                allowances.
+                prerequisite to pick a job.
+                {indexer?.agents.length ? (
+                  <>
+                    {" "}
+                    Registry synced:{" "}
+                    {indexer.agents
+                      .filter((a) => a.hireable)
+                      .map((a) => a.name ?? `#${a.tokenId}`)
+                      .join(" · ")}
+                    .
+                  </>
+                ) : null}
               </p>
             </div>
             <a

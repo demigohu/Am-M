@@ -14,7 +14,7 @@ import { adminCallsForDesk } from "../../lib/altana/approvals";
 import { readVault } from "../../lib/altana/balances";
 import { CHAIN_ID, permissionsForDesk, SESSION_DAYS } from "../../lib/altana/chain";
 import { altanaClient, errorMessage } from "../../lib/altana/client";
-import { postSessionFile } from "../../lib/altana/persist";
+import { postSessionFile, patch8183Job } from "../../lib/altana/persist";
 import { sleep, withNonceRetry } from "../../lib/altana/retry";
 import { serializeSessionEnvelope } from "../../lib/altana/sessionEnvelope";
 import { getStoredWallet, upsertHire } from "../../lib/altana/storage";
@@ -144,7 +144,9 @@ export function HirePanel({
             { network: BNB_TESTNET },
           );
           if (paid.status !== "FAILED" && paid.jobId !== undefined) {
-            upsertHire({ ...hire, erc8183JobId: paid.jobId.toString() });
+            const jobIdStr = paid.jobId.toString();
+            upsertHire({ ...hire, erc8183JobId: jobIdStr });
+            await patch8183Job(id, jobIdStr);
           }
         } catch {
           /* Altana track is the grant; retainer is bonus */

@@ -34,7 +34,31 @@ import {
 import { formatU, shortAddress } from "../../lib/format";
 import { createAccount, openWallet, recoverAccount } from "../../lib/altana/wallet";
 import { AGENTS, DESKS } from "../../lib/catalog";
+import { formatNetYieldLabel, formatGasSpent } from "../../lib/indexer-format";
 import { DESK_HEX } from "../../lib/stitch-styles";
+
+type IndexerAccountSession = {
+  id: string;
+  metrics: {
+    strategyTxCount: number;
+    positionSummary: string | null;
+    snapshotCount: number;
+    gasSpentWei: string;
+  };
+  erc8183JobId: string | null;
+  erc8183: { status: string; deliverableUrl: string | null } | null;
+  deliverable: { summary: string | null } | null;
+  status: string;
+};
+
+type IndexerAccountView = {
+  sessions: IndexerAccountSession[];
+  pnl: {
+    netYieldUsdt: string;
+    gasSpentWei: string;
+    strategyTxCount: number;
+  };
+};
 
 type Phase = "boot" | "none" | "account";
 
@@ -49,9 +73,16 @@ export function AccountHub({ next }: { next: string }) {
   const [error, setError] = useState<string | null>(null);
   const [revoking, setRevoking] = useState<string | null>(null);
   const [depositExpanded, setDepositExpanded] = useState(false);
+  const [indexerAccount, setIndexerAccount] = useState<IndexerAccountView | null>(null);
 
   const refresh = useCallback(async (addr: `0x${string}`) => {
-    const [vault, open] = await Promise.all([readVault(addr), readOpenPositions(addr)]);
+    const [vault, open, indexerRes] = await Promise.all([
+      readVault(addr),
+      readOpenPositions(addr),
+      fetch(`/api/account/${encodeURIComponent(addr)}`)
+        .then((res) => res.json())
+        .catch(() => null),
+    ]);
     setBalances(vault);
     setPositions(open);
     setHires(
@@ -59,6 +90,8 @@ export function AccountHub({ next }: { next: string }) {
         listHires().filter((h) => h.walletAddress.toLowerCase() === addr.toLowerCase()),
       ),
     );
+    const body = indexerRes as { indexed?: boolean; account?: IndexerAccountView | null };
+    setIndexerAccount(body.indexed && body.account ? body.account : null);
     if (!vault.funded) setDepositExpanded(true);
   }, []);
 
@@ -213,6 +246,7 @@ export function AccountHub({ next }: { next: string }) {
       balances={balances}
       positions={positions}
       hires={hires}
+      indexerAccount={indexerAccount}
       error={error}
       next={next}
       revoking={revoking}
@@ -291,6 +325,7 @@ function AccountView({
   balances,
   positions,
   hires,
+  indexerAccount,
   error,
   next,
   revoking,
@@ -307,6 +342,7 @@ function AccountView({
   balances: VaultBalances | null;
   positions: OpenPosition[];
   hires: StoredHire[];
+  indexerAccount: IndexerAccountView | null;
   error: string | null;
   next: string;
   revoking: string | null;
@@ -327,6 +363,22 @@ function AccountView({
   );
   const agentByHire = (id: string) => AGENTS.find((a) => a.id === id);
   const deskByHire = (slug: string) => DESKS.find((d) => d.slug === slug);
+  const indexerByHire = useMemo(() => {
+    const map = new Map<string, IndexerAccountSession>();
+    for (const session of indexerAccount?.sessions ?? []) {
+      map.set(session.id, session);
+    }
+    return map;
+  }, [indexerAccount]);
+
+  const netYieldLabel =
+    formatNetYieldLabel(indexerAccount?.pnl.netYieldUsdt, "USDT (Venus delta)") ??
+    "Not measured yet";
+  const gasLabel =
+    formatGasSpent(indexerAccount?.pnl.gasSpentWei) ?? "Not measured yet";
+  const strategyTxLabel = indexerAccount
+    ? String(indexerAccount.pnl.strategyTxCount)
+    : "Not measured yet";
 
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 px-4 py-8 lg:px-10">
@@ -448,7 +500,7 @@ function AccountView({
           <div>
             <h2 className="font-display text-2xl font-bold">Active agents</h2>
             <p className="mt-0.5 text-[13px] text-char">
-              Agents you hired on this device. Revoke stops them immediately.
+              Agents you hired on this device · enriched from VPS indexer when configured.
             </p>
           </div>
           <span className="inline-flex self-start rounded-full border-2 border-ink bg-marigold px-3 py-1 font-mono text-sm font-bold sm:self-auto">
@@ -499,6 +551,23 @@ function AccountView({
               const agent = agentByHire(hire.agentId);
               const desk = deskByHire(hire.desk);
               const hex = desk ? DESK_HEX[desk.slug] : "#666664";
+              const indexed = indexerByHire.get(hire.id);
+              const tickLabel =
+                indexed && indexed.metrics.strategyTxCount > 0
+                  ? `${indexed.metrics.strategyTxCount} strategy tx`
+                  : indexed
+                    ? "Indexed · no txs yet"
+                    : "Not indexed yet";
+              const deliverableLabel =
+                indexed?.deliverable?.summary ??
+                indexed?.metrics.positionSummary ??
+                (indexed && indexed.metrics.snapshotCount > 0
+                  ? "Position live on-chain"
+                  : indexed?.erc8183?.status
+                    ? `ERC-8183 ${indexed.erc8183.status}`
+                    : indexed?.erc8183JobId
+                      ? `ERC-8183 #${indexed.erc8183JobId}`
+                      : "Not indexed yet");
               return (
                 <li key={hire.id} className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
@@ -517,9 +586,9 @@ function AccountView({
                       </span>
                     </div>
                     <p className="mt-1 font-mono text-[11px] text-char">
-                      Last agent tick: <strong className="text-ink">Not indexed yet</strong>
+                      Last agent tick: <strong className="text-ink">{tickLabel}</strong>
                       {" · "}
-                      Deliverable: <strong className="text-ink">Not indexed yet</strong>
+                      Deliverable: <strong className="text-ink">{deliverableLabel}</strong>
                     </p>
                   </div>
                   <Link
@@ -542,9 +611,9 @@ function AccountView({
         </div>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {[
-            ["Net yield", "Not measured yet"],
-            ["Gas spent", "Not measured yet"],
-            ["Key exposure", "0 private key leaks"],
+            ["Net yield", netYieldLabel],
+            ["Gas spent", gasLabel],
+            ["Strategy txs", strategyTxLabel],
           ].map(([label, value]) => (
             <div key={label} className="rounded-xl border border-ink bg-buttercream p-4">
               <span className="font-mono text-[11px] text-char uppercase">{label}</span>

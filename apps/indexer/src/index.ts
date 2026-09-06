@@ -22,13 +22,26 @@ import {
   VUSDT,
   WBNB,
 } from "./addresses";
-import { listActive, ensureOffchain } from "./offchain";
+import { fetchDeskDeliverable } from "./deliverable";
+import { pollErc8183Job } from "./erc8183";
+import { gasSpentForTxs } from "./gas";
+import {
+  listActive,
+  ensureOffchain,
+  getLastScannedBlock,
+  setLastScannedBlock,
+  upsert8183Job,
+  upsertSessionDeliverable,
+  setSessionGas,
+} from "./offchain";
+import { testnetPublicClient } from "./rpc";
+import { scanWalletTransactions } from "./scan";
 
 const transferEvent = parseAbiItem(
   "event Transfer(address indexed from, address indexed to, uint256 value)",
 );
 
-const TRACKED = [TOKEN_U, USDT, USDC, WBNB] as const;
+const TRACKED = [TOKEN_U, USDT, USDC, WBNB] as `0x${string}`[];
 const BLOCKS_PER_YEAR = 10_512_000n;
 
 ponder.on("United:Transfer", async ({ event, context }) => {
@@ -61,6 +74,9 @@ ponder.on("Tick:block", async ({ event, context }) => {
   const now = event.block.timestamp;
   const defaultLookback = event.block.number > 5000n ? event.block.number - 5000n : 0n;
   const LOG_CHUNK = 2000n;
+const BLOCKS_PER_TICK = BigInt(
+  Math.max(20, Number(process.env.INDEXER_BLOCKS_PER_TICK ?? "200") || 200),
+);
 
   for (const session of sessions) {
     const wallet = session.wallet as Hex;
@@ -132,53 +148,133 @@ ponder.on("Tick:block", async ({ event, context }) => {
     }
 
     try {
-      let scanFrom = defaultLookback;
+      let grantBlock = defaultLookback;
       if (session.grantTx) {
         try {
           const receipt = await context.client.getTransactionReceipt({
             hash: session.grantTx as Hex,
           });
-          scanFrom = receipt.blockNumber;
+          grantBlock = receipt.blockNumber;
         } catch {
           /* grant receipt optional */
         }
       }
 
-      let chunkStart = scanFrom;
-      while (chunkStart <= event.block.number) {
-        const chunkEnd =
-          chunkStart + LOG_CHUNK > event.block.number ? event.block.number : chunkStart + LOG_CHUNK;
-        const logs = await context.client.getLogs({
-          address: [...TRACKED],
-          event: transferEvent,
-          fromBlock: chunkStart,
-          toBlock: chunkEnd,
-        });
-        for (const log of logs) {
-          const from = log.args.from?.toLowerCase();
-          const to = log.args.to?.toLowerCase();
-          if (from !== wallet.toLowerCase() && to !== wallet.toLowerCase()) continue;
-          const target = (to ?? from ?? wallet) as Hex;
-          const verified = to === wallet.toLowerCase();
+      const cursor = await getLastScannedBlock(session.id);
+      const scanFrom = cursor > grantBlock ? cursor + 1n : grantBlock;
+      if (scanFrom > event.block.number) {
+        /* already caught up */
+      } else {
+        const scanTo =
+          scanFrom + BLOCKS_PER_TICK > event.block.number
+            ? event.block.number
+            : scanFrom + BLOCKS_PER_TICK - 1n;
+        const txHashes: Hex[] = [];
+
+        let chunkStart = scanFrom;
+        while (chunkStart <= scanTo) {
+          const chunkEnd =
+            chunkStart + LOG_CHUNK > scanTo ? scanTo : chunkStart + LOG_CHUNK;
+          const logOpts = {
+            address: TRACKED,
+            event: transferEvent,
+            fromBlock: chunkStart,
+            toBlock: chunkEnd,
+          };
+          const [logsFrom, logsTo] = await Promise.all([
+            testnetPublicClient.getLogs({ ...logOpts, args: { from: wallet } }),
+            testnetPublicClient.getLogs({ ...logOpts, args: { to: wallet } }),
+          ]);
+          const seen = new Set<string>();
+          for (const log of [...logsFrom, ...logsTo]) {
+            const dedupe = `${log.transactionHash}-${log.logIndex}`;
+            if (seen.has(dedupe)) continue;
+            seen.add(dedupe);
+            txHashes.push(log.transactionHash);
+            const from = log.args.from?.toLowerCase();
+            const to = log.args.to?.toLowerCase();
+            const target = (to ?? from ?? wallet) as Hex;
+            const verified = to === wallet.toLowerCase();
+            await context.db
+              .insert(agentExecution)
+              .values({
+                id: `${session.id}-${log.transactionHash}-${log.logIndex}`,
+                sessionId: session.id,
+                wallet,
+                txHash: log.transactionHash,
+                target,
+                value: log.args.value ?? 0n,
+                recipientsVerified: verified,
+                timestamp: now,
+                blockNumber: log.blockNumber,
+              })
+              .onConflictDoNothing();
+          }
+          chunkStart = chunkEnd + 1n;
+        }
+
+        const walletTxs = await scanWalletTransactions(wallet, scanFrom, scanTo);
+        for (const tx of walletTxs) {
+          txHashes.push(tx.txHash);
           await context.db
             .insert(agentExecution)
             .values({
-              id: `${session.id}-${log.transactionHash}-${log.logIndex}`,
+              id: `${session.id}-${tx.txHash}-call`,
               sessionId: session.id,
               wallet,
-              txHash: log.transactionHash,
-              target,
-              value: log.args.value ?? 0n,
-              recipientsVerified: verified,
+              txHash: tx.txHash,
+              target: (tx.to ?? wallet) as Hex,
+              value: 0n,
+              recipientsVerified: true,
               timestamp: now,
-              blockNumber: log.blockNumber,
+              blockNumber: tx.blockNumber,
             })
             .onConflictDoNothing();
         }
-        chunkStart = chunkEnd + 1n;
+
+        await setLastScannedBlock(session.id, scanTo);
+        try {
+          const gas = await gasSpentForTxs([...new Set(txHashes.map((h) => h.toLowerCase()))] as Hex[]);
+          await setSessionGas(session.id, gas);
+        } catch {
+          /* gas optional */
+        }
       }
+    } catch (err) {
+      console.warn(`[indexer] execution scan failed session=${session.id}`, err);
+    }
+
+    if (session.erc8183JobId) {
+      try {
+        const polled = await pollErc8183Job(session.erc8183JobId);
+        if (polled) {
+          await upsert8183Job({
+            sessionId: session.id,
+            jobId: polled.jobId,
+            status: polled.status,
+            statusCode: polled.statusCode,
+            deliverableHash: polled.deliverableHash,
+            deliverableUrl: polled.deliverableUrl,
+            budget: polled.budget,
+            provider: polled.provider,
+            submittedAt: polled.submittedAt,
+          });
+        }
+      } catch (err) {
+        console.warn(`[indexer] erc8183 poll failed session=${session.id}`, err);
+      }
+    }
+
+    try {
+      const deskDeliverable = await fetchDeskDeliverable(session.desk);
+      await upsertSessionDeliverable({
+        sessionId: session.id,
+        desk: session.desk,
+        summary: deskDeliverable.summary,
+        payload: deskDeliverable.payload,
+      });
     } catch {
-      /* RPC getLogs window can fail; next tick retries */
+      /* strategy feed optional */
     }
 
     try {

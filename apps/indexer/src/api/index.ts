@@ -8,12 +8,26 @@ import { decryptEnvelope } from "../crypto";
 import { isDesk } from "../addresses";
 import {
   ensureOffchain,
+  get8183Job,
   getSession,
+  getSessionDeliverable,
+  getSessionGas,
   listActiveByDesk,
   listByWallet,
+  patchErc8183JobId,
   putSession,
   revokeSession,
 } from "../offchain";
+import { computeAccountPnl, computeSessionMetrics } from "../metrics";
+
+async function sessionExtras(sessionId: string) {
+  const [erc8183, deliverable, gasSpentWei] = await Promise.all([
+    get8183Job(sessionId),
+    getSessionDeliverable(sessionId),
+    getSessionGas(sessionId),
+  ]);
+  return { erc8183, deliverable, gasSpentWei };
+}
 
 const app = new Hono();
 
@@ -22,7 +36,7 @@ app.use(
   cors({
     origin: (origin) => origin || "*",
     allowHeaders: ["Authorization", "Content-Type"],
-    allowMethods: ["GET", "POST", "DELETE", "OPTIONS"],
+    allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
   }),
 );
 
@@ -52,6 +66,7 @@ app.post("/v1/sessions", async (c) => {
     publicKey?: string;
     expiry?: number;
     grantTx?: string;
+    erc8183JobId?: string;
     envelope?: string;
   }>();
   if (!body.id || !body.desk || !body.envelope || !body.wallet || !body.publicKey) {
@@ -67,6 +82,7 @@ app.post("/v1/sessions", async (c) => {
       publicKey: body.publicKey,
       expiry: Number(body.expiry ?? 0),
       grantTx: body.grantTx,
+      erc8183JobId: body.erc8183JobId,
       envelope: body.envelope.trim(),
     });
     console.log(`[indexer] session stored ${row.desk}/${row.id}`);
@@ -113,6 +129,18 @@ app.get("/v1/sessions", async (c) => {
   return c.json({ items });
 });
 
+app.patch("/v1/sessions/:id", async (c) => {
+  if (!authorized(c)) return c.json({ error: "unauthorized" }, 401);
+  await ensureOffchain();
+  const body = await c.req.json<{ erc8183JobId?: string }>();
+  if (!body.erc8183JobId?.trim()) {
+    return c.json({ error: "erc8183JobId required" }, 400);
+  }
+  const row = await patchErc8183JobId(c.req.param("id"), body.erc8183JobId.trim());
+  if (!row) return c.json({ error: "not found" }, 404);
+  return c.json({ ok: true, id: row.id, erc8183JobId: row.erc8183JobId });
+});
+
 app.delete("/v1/sessions/:id", async (c) => {
   if (!authorized(c)) return c.json({ error: "unauthorized" }, 401);
   await ensureOffchain();
@@ -147,22 +175,40 @@ app.get("/v1/account/:wallet", async (c) => {
     .where(eq(schema.positionSnapshot.wallet, wallet.toLowerCase() as `0x${string}`))
     .orderBy(desc(schema.positionSnapshot.takenAt))
     .limit(20);
-  return c.json(
-    json({
-      wallet,
-      sessions: sessions.map((s) => ({
+
+  const sessionsWithMetrics = await Promise.all(
+    sessions.map(async (s) => {
+      const sExecutions = executions.filter((e) => e.sessionId === s.id);
+      const sSnapshots = snapshots.filter((snap) => snap.sessionId === s.id);
+      const extras = await sessionExtras(s.id);
+      const metrics = computeSessionMetrics(sSnapshots, sExecutions, extras.gasSpentWei);
+      return {
         id: s.id,
         desk: s.desk,
         agentId: s.agentId,
         publicKey: s.publicKey,
         expiry: s.expiry,
         grantTx: s.grantTx,
+        erc8183JobId: s.erc8183JobId,
         status: s.status,
         createdAt: s.createdAt,
-      })),
+        metrics,
+        erc8183: extras.erc8183,
+        deliverable: extras.deliverable,
+      };
+    }),
+  );
+
+  const pnl = computeAccountPnl(sessionsWithMetrics.map((s) => ({ metrics: s.metrics })));
+
+  return c.json(
+    json({
+      wallet,
+      sessions: sessionsWithMetrics,
       keys,
       executions,
       snapshots,
+      pnl,
     }),
   );
 });
@@ -193,6 +239,8 @@ app.get("/v1/jobs/:id", async (c) => {
     .where(eq(schema.hirePayment.from, row.wallet as `0x${string}`))
     .orderBy(desc(schema.hirePayment.blockNumber))
     .limit(20);
+  const extras = await sessionExtras(row.id);
+  const metrics = computeSessionMetrics(snapshots, executions, extras.gasSpentWei);
   return c.json(
     json({
       id: row.id,
@@ -202,11 +250,15 @@ app.get("/v1/jobs/:id", async (c) => {
       publicKey: row.publicKey,
       expiry: row.expiry,
       grantTx: row.grantTx,
+      erc8183JobId: row.erc8183JobId,
       status: row.status,
       keys,
       executions,
       snapshots,
       payments,
+      metrics,
+      erc8183: extras.erc8183,
+      deliverable: extras.deliverable,
     }),
   );
 });
