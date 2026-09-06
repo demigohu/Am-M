@@ -125,7 +125,8 @@ export const AGENTS: Agent[] = [
     engine: "packages/agent-strategy · runRebalanceTick",
     executes:
       "Reads the fee-100 pool at 0xced0…887c. If no LP NFT, mints around current tick. If the NFT is out of range, resets it. Inventory stays in your Altana vault.",
-    firstAction: "After grant, the next tick mints a range if WBNB and USDT are in the vault.",
+    firstAction:
+      "After grant, the next tick mints a range if WBNB and USDT are in the vault.",
     firstActionCode:
       "nfpm.mint({ token0, token1, fee: 100, tickLower, tickUpper, recipient: vault })",
     allowed: [
@@ -160,7 +161,8 @@ export const AGENTS: Agent[] = [
     engine: "packages/agent-strategy · runGridTick",
     executes:
       "Compares the pool tick to the last fill. Past the variant spacing, swaps a clipped size via exactInputSingle. Often noop until the tick moves.",
-    firstAction: "Arms the grid. First swap only fires after the pool tick crosses the spacing.",
+    firstAction:
+      "Arms the grid. First swap only fires after the pool tick crosses the spacing.",
     firstActionCode:
       "swapRouter.exactInputSingle({ tokenIn, tokenOut, fee: 100, recipient: vault })",
     allowed: [
@@ -191,7 +193,8 @@ export const AGENTS: Agent[] = [
     engine: "packages/agent-strategy · runYieldTick",
     executes:
       "Mints the matching vToken for idle USDT, USDC, or BNB. Will not swap across underlyings — that is outside the session allowlist.",
-    firstAction: "Next tick mints vUSDT/vUSDC/vBNB if matching underlying sits idle in the vault.",
+    firstAction:
+      "Next tick mints vUSDT/vUSDC/vBNB if matching underlying sits idle in the vault.",
     firstActionCode: "vToken.mint(amount) · vBNB.mint{value}()",
     allowed: [
       "vUSDT/vUSDC.mint(uint256)",
@@ -225,7 +228,8 @@ export const AGENTS: Agent[] = [
     engine: "packages/agent-strategy · runGuardTick",
     executes:
       "Reads Comptroller account liquidity. Below the floor it repayBorrows the largest debt, or mints collateral if repay inventory is missing.",
-    firstAction: "Next tick reads HF. If already above the floor, noop. If not, repay or mint.",
+    firstAction:
+      "Next tick reads HF. If already above the floor, noop. If not, repay or mint.",
     firstActionCode: "vToken.repayBorrow(amount) or vToken.mint(amount)",
     allowed: [
       "vToken.mint(uint256) / mint()",
@@ -249,16 +253,18 @@ export const AGENTS: Agent[] = [
     liveHint: "Live · /strategy",
     pair: "WBNB / USDT (Venus) fee 100",
     lastAction: "—",
-    wallet: "0x0000000000000000000000000000000000000000",
+    wallet: "0x6229A7A8271f5aFDE25b66d708E55F38e1979e3F",
     registryId: 0,
     endpoint: "https://rebalancingagg.ammlabs.fun/",
     strategyUrl: "https://rebalancingagg.ammlabs.fun/strategy",
     summary:
       "Aggressive LP range (width 60). Resets faster when price leaves the band — higher turnover, tighter range.",
-    engine: "packages/agent-strategy · runRebalanceTick · AGENT_VARIANT=aggressive",
+    engine:
+      "packages/agent-strategy · runRebalanceTick · AGENT_VARIANT=aggressive",
     executes:
       "Same NFPM flow as conservative, but mints a narrow range (width 60 vs 200). More frequent rebalance when tick drifts.",
-    firstAction: "After grant, the next tick mints a tight range if WBNB and USDT are in the vault.",
+    firstAction:
+      "After grant, the next tick mints a tight range if WBNB and USDT are in the vault.",
     firstActionCode:
       "nfpm.mint({ token0, token1, fee: 100, tickLower, tickUpper, recipient: vault })",
     allowed: [
@@ -284,7 +290,7 @@ export const AGENTS: Agent[] = [
     liveHint: "Live · /strategy",
     pair: "WBNB / USDT (Venus) fee 100",
     lastAction: "—",
-    wallet: "0x0000000000000000000000000000000000000000",
+    wallet: "0xf9b44A87fe308B9323C831c1e7ffAC9Bc9335cdb",
     registryId: 0,
     endpoint: "https://gridtradingagg.ammlabs.fun/",
     strategyUrl: "https://gridtradingagg.ammlabs.fun/strategy",
@@ -293,7 +299,8 @@ export const AGENTS: Agent[] = [
     engine: "packages/agent-strategy · runGridTick · AGENT_VARIANT=aggressive",
     executes:
       "Swaps on 80 bps tick moves (vs 200 bps conservative) with up to ~20% inventory per leg.",
-    firstAction: "Arms the grid. First swap fires after a smaller tick move than conservative.",
+    firstAction:
+      "Arms the grid. First swap fires after a smaller tick move than conservative.",
     firstActionCode:
       "swapRouter.exactInputSingle({ tokenIn, tokenOut, fee: 100, recipient: vault })",
     allowed: [
@@ -315,7 +322,7 @@ export const AGENTS: Agent[] = [
     liveHint: "Live · /strategy",
     pair: "vUSDT / vUSDC / vBNB",
     lastAction: "—",
-    wallet: "0x0000000000000000000000000000000000000000",
+    wallet: "0x5fEB58a1aC652F374CAd1091ccD7141c56e47Cc8",
     registryId: 0,
     endpoint: "https://yieldrouteragg.ammlabs.fun/",
     strategyUrl: "https://yieldrouteragg.ammlabs.fun/strategy",
@@ -324,7 +331,8 @@ export const AGENTS: Agent[] = [
     engine: "packages/agent-strategy · runYieldTick · AGENT_VARIANT=aggressive",
     executes:
       "Ranks Core Pool markets via Venus API. Exits and enters when the APR spread exceeds 0.5%.",
-    firstAction: "Next tick mints or rotates if a better vToken beats the current position by ≥ 0.5%.",
+    firstAction:
+      "Next tick mints or rotates if a better vToken beats the current position by ≥ 0.5%.",
     firstActionCode: "vToken.redeem(uint256) · vToken.mint(amount)",
     allowed: [
       "vUSDT/vUSDC.mint(uint256)",
@@ -349,7 +357,7 @@ export const AGENTS: Agent[] = [
     liveHint: "Live · /strategy",
     pair: "Venus account",
     lastAction: "—",
-    wallet: "0x0000000000000000000000000000000000000000",
+    wallet: "0xA465C9B4730b8FfD1E5AaB19b3D98A703219d433",
     registryId: 0,
     endpoint: "https://healthfactoragg.ammlabs.fun/",
     strategyUrl: "https://healthfactoragg.ammlabs.fun/strategy",
@@ -358,7 +366,8 @@ export const AGENTS: Agent[] = [
     engine: "packages/agent-strategy · runGuardTick · AGENT_VARIANT=aggressive",
     executes:
       "Repay or mint when HF drops below 1.2. Rescue size uses the full daily cap instead of ~20%.",
-    firstAction: "Next tick reads HF. Below 1.2 → repay largest debt or mint collateral at full cap.",
+    firstAction:
+      "Next tick reads HF. Below 1.2 → repay largest debt or mint collateral at full cap.",
     firstActionCode: "vToken.repayBorrow(amount) or vToken.mint(amount)",
     allowed: [
       "vToken.mint(uint256) / mint()",

@@ -13,7 +13,7 @@ kind = "altana"
 keystore_dir = "../../.studio/wallets"
 session_file = "../../.studio/wallets/altana-session.json"
 # Run `bag wallet new` in agents/healthfactoragg — then update wallet + registryId in apps/web/lib/catalog.ts
-address = "0x0000000000000000000000000000000000000000"
+address = "0xA465C9B4730b8FfD1E5AaB19b3D98A703219d433"
 
 [llm]
 provider = "openai"

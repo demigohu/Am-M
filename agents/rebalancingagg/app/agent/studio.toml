@@ -13,7 +13,7 @@ kind = "altana"
 keystore_dir = "../../.studio/wallets"
 session_file = "../../.studio/wallets/altana-session.json"
 # Run `bag wallet new` in agents/rebalancingagg — then update wallet + registryId in apps/web/lib/catalog.ts
-address = "0x0000000000000000000000000000000000000000"
+address = "0x6229A7A8271f5aFDE25b66d708E55F38e1979e3F"
 
 [llm]
 provider = "openai"
