@@ -42,6 +42,23 @@ export const ERC20_ABI = [
   },
 ] as const;
 
+export const WBNB_ABI = [
+  {
+    type: "function",
+    name: "deposit",
+    stateMutability: "payable",
+    inputs: [],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "withdraw",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "wad", type: "uint256" }],
+    outputs: [],
+  },
+] as const;
+
 export const COMPTROLLER_ABI = [
   {
     type: "function",
@@ -386,5 +403,49 @@ export const SWAP_ROUTER_ABI = [
       },
     ],
     outputs: [{ name: "amountOut", type: "uint256" }],
+  },
+] as const;
+
+export const VENUS_SWAP_ROUTER_ABI = [
+  {
+    type: "function",
+    name: "swapExactTokensForTokensAndSupply",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "vToken", type: "address" },
+      { name: "amountIn", type: "uint256" },
+      { name: "amountOutMin", type: "uint256" },
+      { name: "path", type: "address[]" },
+      { name: "to", type: "address" },
+      { name: "deadline", type: "uint256" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "swapExactTokensForBNBAndSupply",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "vToken", type: "address" },
+      { name: "amountIn", type: "uint256" },
+      { name: "amountOutMin", type: "uint256" },
+      { name: "path", type: "address[]" },
+      { name: "to", type: "address" },
+      { name: "deadline", type: "uint256" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "swapExactETHForTokensAndSupply",
+    stateMutability: "payable",
+    inputs: [
+      { name: "vToken", type: "address" },
+      { name: "amountOutMin", type: "uint256" },
+      { name: "path", type: "address[]" },
+      { name: "to", type: "address" },
+      { name: "deadline", type: "uint256" },
+    ],
+    outputs: [],
   },
 ] as const;

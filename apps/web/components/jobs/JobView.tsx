@@ -8,6 +8,7 @@ import { Icon } from "../ui/Icon";
 import { urlAltanaKey, urlBscAddress, urlBscTx } from "../../lib/altana/chain";
 import { altanaKeyId } from "../../lib/altana/keystore";
 import { getHire, remainingLabel, type StoredHire } from "../../lib/altana/storage";
+import { budgetFromHire, formatSessionBudgetSummary } from "../../lib/altana/sessionBudget";
 import { formatU, shortAddress } from "../../lib/format";
 import { formatNetYieldLabel, formatGasSpent } from "../../lib/indexer-format";
 import { agentById, deskOf, type DeskSlug } from "../../lib/catalog";
@@ -152,6 +153,7 @@ export function JobView({ jobId }: { jobId: string }) {
 
   const agent = agentById(hire.agentId);
   const desk = agent ? deskOf(agent) : null;
+  const sessionBudgetSummary = formatSessionBudgetSummary(budgetFromHire(hire));
   const hex = desk ? DESK_HEX[desk.slug] : "#4a63c4";
   const grantTx = hire.transactionHash ?? indexed?.grantTx ?? null;
   const latestExecution = indexed?.executions?.[0] ?? null;
@@ -267,6 +269,9 @@ export function JobView({ jobId }: { jobId: string }) {
             }
           />
           <Row label="Session public key" value={shortAddress(hire.publicKey)} />
+          <Row label="Daily spend cap" value={sessionBudgetSummary.spendLabel} />
+          <Row label="Native cap" value={sessionBudgetSummary.nativeLabel} />
+          <Row label="Lease" value={sessionBudgetSummary.leaseLabel} />
           {onIndexer ? (
             <Row
               label="Indexer · session"

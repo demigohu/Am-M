@@ -1,4 +1,4 @@
-import { createTickLoop, runGuardTick } from "@am-m/agent-strategy";
+import { createTickLoop, runGuardTick, sessionPoliciesForLoadedSessions } from "@am-m/agent-strategy";
 import { executeSessionCalls } from "./signing.js";
 
 const loop = createTickLoop({
@@ -12,4 +12,8 @@ export function startStrategyTick(): () => void {
 
 export function strategyStatus() {
   return loop.status();
+}
+
+export function sessionStatus() {
+  return sessionPoliciesForLoadedSessions();
 }

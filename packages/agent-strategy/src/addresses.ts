@@ -14,6 +14,10 @@ export const USDC = "0x16227D60f7a0e586C66B005219dfc887D13C9531" as const;
 export const VBNB = "0x2E7222e51c0f6e98610A1543Aa3836E092CDe62c" as const;
 export const WBNB = "0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd" as const;
 
+/** Venus Core Pool periphery — swap + supply in one tx (BSC testnet). */
+export const VENUS_SWAP_ROUTER =
+  "0xd3F226acA3210990DBA3f410b74E36b08F31FCf2" as const;
+
 export const PCS_NFPM =
   "0x427bF5b37357632377eCbEC9de3626C71A5396c1" as const;
 export const PCS_SWAP_ROUTER =
@@ -50,6 +54,14 @@ export const SIG = {
   pcsBurn: "burn(uint256)",
   pcsExactInputSingle:
     "exactInputSingle((address,address,uint24,address,uint256,uint256,uint256,uint160))",
+  wbnbDeposit: "deposit()",
+  wbnbWithdraw: "withdraw(uint256)",
   erc20Approve: "approve(address,uint256)",
   venusEnterMarkets: "enterMarkets(address[])",
+  venusSwapExactTokensForTokensAndSupply:
+    "swapExactTokensForTokensAndSupply(address,uint256,uint256,address[],address,uint256)",
+  venusSwapExactTokensForBNBAndSupply:
+    "swapExactTokensForBNBAndSupply(address,uint256,uint256,address[],address,uint256)",
+  venusSwapExactETHForTokensAndSupply:
+    "swapExactETHForTokensAndSupply(address,uint256,address[],address,uint256)",
 } as const;

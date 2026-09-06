@@ -1,0 +1,91 @@
+/**
+ * Yield desk session allowlist — mirrors packages/agent-strategy yieldSessionPermissions.
+ * Keep in sync with CORE_POOL_VTOKENS + Venus SwapRouter signatures.
+ */
+import type { SessionPermissions } from "@altananetwork/sdk";
+import type { DeskSlug } from "../catalog";
+
+export const VENUS_SWAP_ROUTER = "0xd3F226acA3210990DBA3f410b74E36b08F31FCf2" as const;
+
+export const CORE_POOL_VTOKENS = [
+  "0x05B2EC5B7437FB188175bf440e3EB36af79fe319",
+  "0x08e0A5575De71037aE36AbfAfb516595fE68e5e4",
+  "0x101843eAbA6b98fbF4bba078b86EFdE62DF0fc16",
+  "0x140d5Da2cE9fb9A8725cabdDB2Fe8ea831342C78",
+  "0x162D005F0Fff510E54958Cfc5CF32A3180A84aab",
+  "0x171B468b52d7027F12cEF90cd065d6776a25E24e",
+  "0x2E7222e51c0f6e98610A1543Aa3836E092CDe62c",
+  "0x35566ED3AF9E537Be487C98b1811cDf95ad0C32b",
+  "0x3619bdDc61189F33365CC572DF3a68FB3b316516",
+  "0x369Fea97f6fB7510755DCA389088d9E2e2819278",
+  "0x37C28DE42bA3d22217995D146FC684B2326Ede64",
+  "0x39A239F5117BFaC7a1b0b3A517c454113323451d",
+  "0x3A00d9B02781f47d033BAd62edc55fBF8D083Fb0",
+  "0x3Ed56f6937fc8549f9325405d1e8E650739647Fa",
+  "0x488aB2826a154da01CC4CC16A8C83d4720D3cA2C",
+  "0x519e61D2CDA04184FB086bbD2322C1bfEa0917Cf",
+  "0x6AF3Fdb3282c5bb6926269Db10837fa8Aec67C04",
+  "0x6d6F697e34145Bb95c54E77482d97cc261Dc237E",
+  "0x714db6c38A17883964B68a07d56cE331501d9eb6",
+  "0x73F506Aefd5e169D48Ea21A373B9B0a200E37585",
+  "0x74469281310195A04840Daf6EdF576F559a3dE80",
+  "0x86f8DfB7CA84455174EE9C3edd94867b51Da46BD",
+  "0x8c8A1a0b6e1cb8058037F7bF24de6b79Aca5B7B0",
+  "0x90535B06ddB00453a5e5f2bC094d498F1cc86032",
+  "0x93969F17d4c1C7B22000eA26D5C2766E0f616D90",
+  "0x9447b1D4Bd192f25416B6aCc3B7f06be2f7D6309",
+  "0x95DaED37fdD3F557b3A5cCEb7D50Be65b36721DF",
+  "0x97cB97B05697c377C0bd09feDce67DBd86B7aB1e",
+  "0x9e1ECb2671AfabE9eaAA2e74Cb2318a9b6A2Eb5d",
+  "0xA38110ae4451A86ab754695057d5B5a9BEAd0387",
+  "0xa7CB7C1cf9C31fC077Fd7c6dEa30119Bec796f1D",
+  "0xaB5504A3cde0d8253E8F981D663c7Ff7128B3e56",
+  "0xAfc13BC065ABeE838540823431055D2ea52eBA52",
+  "0xb6e9322C49FD75a367Fcb17B0Fcd62C5070EbCBe",
+  "0xb7526572FFE56AB9D7489838Bf2E18e3323b441A",
+  "0xb846eEbaC8b014296709dc660Bfcb6ea182718e8",
+  "0xbd9EB061444665Df7282Ec0888b72D60aC41Eb8C",
+  "0xc93CBF6CA7F3124737F2f4daDa8dBBC7be56d125",
+  "0xc9cc8D6F8dE76943B8f34C8aA730A0e892322f28",
+  "0xCd5A0037ebfC4a22A755923bB5C983947FaBdCe7",
+  "0xD5C4C2e2facBEB59D0216D0595d63FcDc6F9A1a7",
+  "0xd9E77847ec815E56ae2B9E69596C69b6972b0B1c",
+  "0xeDaC03D29ff74b5fDc0CC936F6288312e1459BC6",
+  "0xEFAACF73CE2D38ED40991f29E72B12C74bd4cf23",
+  "0xF06e662a00796c122AaAE935EC4F0Be3F74f5636",
+  "0xF912d3001CAf6DC4ADD366A62Cc9115B4303c9A9",
+] as const;
+
+export function yieldPermissionsForDesk(
+  sig: {
+    venusMint: string;
+    venusMintBnb: string;
+    venusRedeem: string;
+    venusRedeemUnderlying: string;
+    venusEnterMarkets: string;
+    venusSwapExactTokensForTokensAndSupply: string;
+    venusSwapExactTokensForBNBAndSupply: string;
+    venusSwapExactETHForTokensAndSupply: string;
+  },
+  comptroller: `0x${string}`,
+  vBnb: `0x${string}`,
+  spend: SessionPermissions["spend"],
+): SessionPermissions {
+  const calls: NonNullable<SessionPermissions["calls"]>[number][] = [
+    { to: comptroller, signature: sig.venusEnterMarkets },
+    { to: VENUS_SWAP_ROUTER, signature: sig.venusSwapExactTokensForTokensAndSupply },
+    { to: VENUS_SWAP_ROUTER, signature: sig.venusSwapExactTokensForBNBAndSupply },
+    { to: VENUS_SWAP_ROUTER, signature: sig.venusSwapExactETHForTokensAndSupply },
+  ];
+  for (const vToken of CORE_POOL_VTOKENS) {
+    calls.push({ to: vToken, signature: sig.venusMint });
+    if (vToken.toLowerCase() === vBnb.toLowerCase()) {
+      calls.push({ to: vToken, signature: sig.venusMintBnb });
+    }
+    calls.push({ to: vToken, signature: sig.venusRedeem });
+    calls.push({ to: vToken, signature: sig.venusRedeemUnderlying });
+  }
+  return { calls, spend };
+}
+
+export type { DeskSlug };

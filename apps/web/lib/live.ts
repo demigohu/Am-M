@@ -52,10 +52,14 @@ function fromReport(
   let inRange: string | undefined;
   if (desk === "guard" && typeof snap.healthFactor === "number") {
     liveMetric = `HF ${snap.healthFactor.toFixed(2)}`;
-  } else if (desk === "yield" && Array.isArray(snap.markets)) {
-    const first = snap.markets[0] as { symbol?: string; supplyAprApprox?: number } | undefined;
-    if (first?.supplyAprApprox != null) {
-      liveMetric = `${first.symbol ?? "vToken"} ${(first.supplyAprApprox * 100).toFixed(2)}% APR`;
+  } else if (desk === "yield") {
+    const best = snap.bestMarket as
+      | { symbol?: string; supplyApyPct?: string }
+      | undefined;
+    if (best?.symbol && best.supplyApyPct) {
+      liveMetric = `${best.symbol} ${best.supplyApyPct}% APR`;
+    } else if (typeof snap.corePoolMarkets === "number") {
+      liveMetric = `${snap.corePoolMarkets} Core Pool markets`;
     }
   } else if (desk === "rebalance") {
     const positions = snap.positions as Array<{ inRange?: boolean }> | undefined;

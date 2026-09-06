@@ -3,6 +3,7 @@ import {
   COMPTROLLER,
   VBNB,
   VTOKENS,
+  WBNB,
   type Address,
 } from "./addresses.js";
 import {
@@ -35,6 +36,8 @@ export type VenusAccount = {
   shortfall: bigint;
   healthFactor: number | null;
   inMarkets: Address[];
+  /** ERC-20 WBNB sitting in the wallet (used between swap and vBNB mint). */
+  wbnbWallet: bigint;
   markets: VenusMarketSnap[];
 };
 
@@ -74,6 +77,13 @@ export async function readVenusAccount(owner: Address): Promise<VenusAccount> {
     abi: COMPTROLLER_ABI,
     functionName: "oracle",
   })) as Address;
+
+  const wbnbWallet = await publicClient.readContract({
+    address: WBNB,
+    abi: ERC20_ABI,
+    functionName: "balanceOf",
+    args: [owner],
+  });
 
   const markets: VenusMarketSnap[] = [];
   let borrowUsd = 0n;
@@ -138,6 +148,7 @@ export async function readVenusAccount(owner: Address): Promise<VenusAccount> {
     shortfall,
     healthFactor: hfFromParts(borrowUsd, liquidity, shortfall),
     inMarkets,
+    wbnbWallet,
     markets,
   };
 }

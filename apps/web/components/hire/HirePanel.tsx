@@ -12,7 +12,13 @@ import { generatePrivateKey } from "viem/accounts";
 import { Icon } from "../ui/Icon";
 import { adminCallsForDesk } from "../../lib/altana/approvals";
 import { readVault } from "../../lib/altana/balances";
-import { CHAIN_ID, permissionsForDesk, SESSION_DAYS } from "../../lib/altana/chain";
+import { CHAIN_ID, permissionsForDesk } from "../../lib/altana/chain";
+import {
+  buildSessionBudget,
+  defaultSessionBudgetInput,
+  sessionBudgetToGrantOpts,
+  type SessionBudgetInput,
+} from "../../lib/altana/sessionBudget";
 import { altanaClient, errorMessage } from "../../lib/altana/client";
 import { postSessionFile, patch8183Job } from "../../lib/altana/persist";
 import { sleep, withNonceRetry } from "../../lib/altana/retry";
@@ -26,10 +32,12 @@ export function HirePanel({
   agent,
   desk,
   variant = "default",
+  budgetInput = defaultSessionBudgetInput(),
 }: {
   agent: Agent;
   desk: Desk;
   variant?: "default" | "checkout";
+  budgetInput?: SessionBudgetInput;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -76,8 +84,13 @@ export function HirePanel({
 
       const sessionKey = generatePrivateKey();
       const sessionSigner = signerFromPrivateKey(sessionKey);
-      const expiry = Math.floor(Date.now() / 1000) + SESSION_DAYS * 24 * 60 * 60;
-      const permissions = permissionsForDesk(agent.desk);
+      const sessionBudget = buildSessionBudget(budgetInput);
+      const expiry =
+        Math.floor(Date.now() / 1000) + sessionBudget.leaseDays * 24 * 60 * 60;
+      const permissions = permissionsForDesk(
+        agent.desk,
+        sessionBudgetToGrantOpts(sessionBudget),
+      );
 
       setStep("Grant session (passkey)…");
       const granted = await withNonceRetry(() =>
@@ -109,6 +122,7 @@ export function HirePanel({
         envelope,
         createdAt: Date.now(),
         status: "active" as const,
+        sessionBudget,
       };
       upsertHire(hire);
 

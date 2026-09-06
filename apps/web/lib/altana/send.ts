@@ -1,7 +1,7 @@
 "use client";
 
 import { encodeFunctionData, isAddress, parseEther, parseUnits, type Address } from "viem";
-import { ERC20_ABI, MIN_NATIVE_WEI, TOKEN_U, USDC, USDT, type RelayCall } from "./chain";
+import { ERC20_ABI, MIN_NATIVE_WEI, STABLE_DECIMALS, TOKEN_U, TOKEN_U_DECIMALS, USDC, USDT, type RelayCall } from "./chain";
 
 export type SendAsset = "tBNB" | "USDT" | "USDC" | "U";
 
@@ -32,7 +32,8 @@ export function parseSendAmount(asset: SendAsset, amount: string): bigint {
     throw new Error("Enter an amount greater than zero.");
   }
   if (asset === "tBNB") return parseEther(trimmed);
-  return parseUnits(trimmed, 18);
+  if (asset === "USDT" || asset === "USDC") return parseUnits(trimmed, STABLE_DECIMALS);
+  return parseUnits(trimmed, TOKEN_U_DECIMALS);
 }
 
 export function validateSendRecipient(to: string): Address {

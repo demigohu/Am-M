@@ -1,6 +1,9 @@
 import { encodeFunctionData, type Address, type Hex } from "viem";
 import type { SessionPermissions } from "@altananetwork/sdk";
 import type { DeskSlug } from "../catalog";
+import { VENUS_SWAP_ROUTER, yieldPermissionsForDesk } from "./yieldAllowlist";
+
+export { VENUS_SWAP_ROUTER };
 
 export const CHAIN_ID = 97;
 export const RPC_URL = "https://bsc-testnet-rpc.publicnode.com";
@@ -39,6 +42,10 @@ export const PCS_NFPM = "0x427bF5b37357632377eCbEC9de3626C71A5396c1" as Address;
 export const PCS_SWAP_ROUTER = "0x1b81D678ffb9C0263b24A97847620C99d213eB14" as Address;
 export const TOKEN_U = "0xc70B8741B8B07A6d61E54fd4B20f22Fa648E5565" as Address;
 
+/** Venus testnet USDT/USDC use 6 decimals (not 18 like $U/WBNB). */
+export const STABLE_DECIMALS = 6;
+export const TOKEN_U_DECIMALS = 18;
+
 export const SIG = {
   venusMint: "mint(uint256)",
   venusMintBnb: "mint()",
@@ -54,15 +61,97 @@ export const SIG = {
   pcsBurn: "burn(uint256)",
   pcsExactInputSingle:
     "exactInputSingle((address,address,uint24,address,uint256,uint256,uint256,uint160))",
+  wbnbDeposit: "deposit()",
+  wbnbWithdraw: "withdraw(uint256)",
   venusEnterMarkets: "enterMarkets(address[])",
+  venusSwapExactTokensForTokensAndSupply:
+    "swapExactTokensForTokensAndSupply(address,uint256,uint256,address[],address,uint256)",
+  venusSwapExactTokensForBNBAndSupply:
+    "swapExactTokensForBNBAndSupply(address,uint256,uint256,address[],address,uint256)",
+  venusSwapExactETHForTokensAndSupply:
+    "swapExactETHForTokensAndSupply(address,uint256,address[],address,uint256)",
 } as const;
 
-const DAY_USDT = 100n * 10n ** 18n;
 const DAY_NATIVE = 10n ** 17n;
 export const MAX_UINT256 = (1n << 256n) - 1n;
 export const SESSION_DAYS = 30;
+export const DEFAULT_STABLE_DAILY_CAP = 100;
 export const MIN_NATIVE_WEI = 2n * 10n ** 16n; // 0.02 tBNB
 export const WRAP_WEI = 2n * 10n ** 16n;
+
+export type SessionBudgetOpts = {
+  stableDailyCap?: bigint;
+  wbnbDailyCap?: bigint;
+  nativeDailyCap?: bigint;
+};
+
+function resolveBudget(opts?: SessionBudgetOpts) {
+  const stable =
+    opts?.stableDailyCap ?? BigInt(DEFAULT_STABLE_DAILY_CAP) * 10n ** BigInt(STABLE_DECIMALS);
+  const wbnb = opts?.wbnbDailyCap ?? BigInt(DEFAULT_STABLE_DAILY_CAP) * 10n ** 18n;
+  const native = opts?.nativeDailyCap ?? DAY_NATIVE;
+  return { stable, wbnb, native };
+}
+
+export function permissionsForDesk(
+  desk: DeskSlug,
+  opts?: SessionBudgetOpts,
+): SessionPermissions {
+  const budget = resolveBudget(opts);
+  if (desk === "rebalance") {
+    return {
+      calls: [
+        { to: PCS_NFPM, signature: SIG.pcsMint },
+        { to: PCS_NFPM, signature: SIG.pcsIncrease },
+        { to: PCS_NFPM, signature: SIG.pcsDecrease },
+        { to: PCS_NFPM, signature: SIG.pcsCollect },
+        { to: PCS_NFPM, signature: SIG.pcsBurn },
+      ],
+      spend: [
+        { token: USDT, limit: budget.stable, period: "day" },
+        { token: WBNB, limit: budget.wbnb, period: "day" },
+        { limit: budget.native, period: "day" },
+      ],
+    };
+  }
+  if (desk === "grid") {
+    return {
+      calls: [{ to: PCS_SWAP_ROUTER, signature: SIG.pcsExactInputSingle }],
+      spend: [
+        { token: USDT, limit: budget.stable, period: "day" },
+        { token: WBNB, limit: budget.wbnb, period: "day" },
+        { limit: budget.native, period: "day" },
+      ],
+    };
+  }
+  if (desk === "yield") {
+    return yieldPermissionsForDesk(SIG, COMPTROLLER, VBNB, [
+      { token: USDT, limit: budget.stable, period: "day" },
+      { token: USDC, limit: budget.stable, period: "day" },
+      { token: WBNB, limit: budget.wbnb, period: "day" },
+      { limit: budget.native, period: "day" },
+    ]);
+  }
+  return {
+    calls: [
+      { to: VUSDT, signature: SIG.venusMint },
+      { to: VUSDC, signature: SIG.venusMint },
+      { to: VBNB, signature: SIG.venusMintBnb },
+      { to: VUSDT, signature: SIG.venusRepay },
+      { to: VUSDC, signature: SIG.venusRepay },
+      { to: VBNB, signature: SIG.venusRepayBnb },
+      { to: VUSDT, signature: SIG.venusRedeem },
+      { to: VUSDC, signature: SIG.venusRedeem },
+      { to: VBNB, signature: SIG.venusRedeem },
+      { to: COMPTROLLER, signature: SIG.venusEnterMarkets },
+    ],
+    spend: [
+      { token: USDT, limit: budget.stable, period: "day" },
+      { token: USDC, limit: budget.stable, period: "day" },
+      { limit: budget.native, period: "day" },
+    ],
+  };
+}
 
 export const ERC20_ABI = [
   {
@@ -123,79 +212,10 @@ export const WBNB_DEPOSIT_ABI = [
 
 export type RelayCall = { to: Address; data: Hex; value?: bigint };
 
-export function permissionsForDesk(desk: DeskSlug): SessionPermissions {
-  if (desk === "rebalance") {
-    return {
-      calls: [
-        { to: PCS_NFPM, signature: SIG.pcsMint },
-        { to: PCS_NFPM, signature: SIG.pcsIncrease },
-        { to: PCS_NFPM, signature: SIG.pcsDecrease },
-        { to: PCS_NFPM, signature: SIG.pcsCollect },
-        { to: PCS_NFPM, signature: SIG.pcsBurn },
-      ],
-      spend: [
-        { token: USDT, limit: DAY_USDT, period: "day" },
-        { token: WBNB, limit: DAY_USDT, period: "day" },
-        { limit: DAY_NATIVE, period: "day" },
-      ],
-    };
-  }
-  if (desk === "grid") {
-    return {
-      calls: [{ to: PCS_SWAP_ROUTER, signature: SIG.pcsExactInputSingle }],
-      spend: [
-        { token: USDT, limit: DAY_USDT, period: "day" },
-        { token: WBNB, limit: DAY_USDT, period: "day" },
-        { limit: DAY_NATIVE, period: "day" },
-      ],
-    };
-  }
-  if (desk === "yield") {
-    return {
-      calls: [
-        { to: VUSDT, signature: SIG.venusMint },
-        { to: VUSDC, signature: SIG.venusMint },
-        { to: VBNB, signature: SIG.venusMintBnb },
-        { to: VUSDT, signature: SIG.venusRedeem },
-        { to: VUSDC, signature: SIG.venusRedeem },
-        { to: VBNB, signature: SIG.venusRedeem },
-        { to: VUSDT, signature: SIG.venusRedeemUnderlying },
-        { to: VUSDC, signature: SIG.venusRedeemUnderlying },
-        { to: VBNB, signature: SIG.venusRedeemUnderlying },
-        { to: COMPTROLLER, signature: SIG.venusEnterMarkets },
-      ],
-      spend: [
-        { token: USDT, limit: DAY_USDT, period: "day" },
-        { token: USDC, limit: DAY_USDT, period: "day" },
-        { limit: DAY_NATIVE, period: "day" },
-      ],
-    };
-  }
-  return {
-    calls: [
-      { to: VUSDT, signature: SIG.venusMint },
-      { to: VUSDC, signature: SIG.venusMint },
-      { to: VBNB, signature: SIG.venusMintBnb },
-      { to: VUSDT, signature: SIG.venusRepay },
-      { to: VUSDC, signature: SIG.venusRepay },
-      { to: VBNB, signature: SIG.venusRepayBnb },
-      { to: VUSDT, signature: SIG.venusRedeem },
-      { to: VUSDC, signature: SIG.venusRedeem },
-      { to: VBNB, signature: SIG.venusRedeem },
-      { to: COMPTROLLER, signature: SIG.venusEnterMarkets },
-    ],
-    spend: [
-      { token: USDT, limit: DAY_USDT, period: "day" },
-      { token: USDC, limit: DAY_USDT, period: "day" },
-      { limit: DAY_NATIVE, period: "day" },
-    ],
-  };
-}
-
 export function protocolOfDesk(desk: DeskSlug): { label: string; address: Address } {
   if (desk === "rebalance") return { label: "PancakeSwap v3 NFPM", address: PCS_NFPM };
   if (desk === "grid") return { label: "PancakeSwap v3 SwapRouter", address: PCS_SWAP_ROUTER };
-  if (desk === "yield") return { label: "Venus Comptroller", address: COMPTROLLER };
+  if (desk === "yield") return { label: "Venus SwapRouter", address: VENUS_SWAP_ROUTER };
   return { label: "Venus Comptroller", address: COMPTROLLER };
 }
 

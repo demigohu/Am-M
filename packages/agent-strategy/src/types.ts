@@ -31,6 +31,8 @@ export type TickAction =
       calls: StrategyCall[];
     };
 
+import type { SessionPolicyView } from "./session-policy.js";
+
 export type TickReport = {
   desk: "healthfactor" | "yieldrouter" | "rebalancing" | "gridtrading";
   variant: RiskProfile;
@@ -39,6 +41,8 @@ export type TickReport = {
   snapshot: Record<string, unknown>;
   action: TickAction;
   execution?: ExecuteResultLike;
+  /** User-visible session limits (allowlist, spend caps, expiry). No session private key. */
+  sessionPolicy?: SessionPolicyView;
 };
 
 export function riskProfile(raw = process.env.AGENT_VARIANT): RiskProfile {
@@ -48,7 +52,7 @@ export function riskProfile(raw = process.env.AGENT_VARIANT): RiskProfile {
 export function defaultNotionalWei(): bigint {
   const raw = process.env.STRATEGY_NOTIONAL_WEI;
   if (raw && /^\d+$/.test(raw)) return BigInt(raw);
-  return 10n ** 16n; // 0.01 token — small enough for thin testnet pools
+  return 10n * 10n ** 6n; // 10 USDT (6 decimals)
 }
 
 export function min(a: bigint, b: bigint): bigint {

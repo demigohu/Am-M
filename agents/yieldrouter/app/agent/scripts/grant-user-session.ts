@@ -2,8 +2,8 @@
  * Test-user Altana session for Yield (no passkey / no FE).
  *
  * Reuses the healthfactor test-user admin key when present (one smart
- * account, a Venus session scoped to mint/redeem — no repay). Approves
- * underlying to vTokens and enterMarkets if missing.
+ * account, a Venus session scoped to Core Pool mint/redeem + SwapRouter).
+ * Approves underlying to vTokens / SwapRouter and enterMarkets if missing.
  *
  * Run from app/agent:
  *   pnpm grant-user-session
@@ -22,11 +22,14 @@ import {
   COMPTROLLER,
   COMPTROLLER_ABI,
   ERC20_ABI,
+  TEST_STABLE_SPEND_LIMIT,
   USDC,
   USDT,
   VBNB,
+  VENUS_SWAP_ROUTER,
   VUSDC,
   VUSDT,
+  WBNB,
   publicClient,
   yieldSessionPermissions,
 } from "@am-m/agent-strategy";
@@ -41,7 +44,10 @@ const SIBLING_ADMINS = [
 ];
 const SESSION_FILE = resolve(STUDIO_DIR, "user-session.json");
 const MIN_NATIVE_WEI = 2n * 10n ** 16n;
-const EXPIRY_DAYS = 30;
+const EXPIRY_DAYS = Number(process.env.SESSION_DAYS || 30);
+const SPEND_LIMIT = process.env.SESSION_STABLE_SPEND_LIMIT
+  ? BigInt(process.env.SESSION_STABLE_SPEND_LIMIT)
+  : TEST_STABLE_SPEND_LIMIT;
 const NONCE_RETRY_TRIES = 4;
 const NONCE_RETRY_DELAY_MS = 5_000;
 
@@ -68,7 +74,7 @@ async function withNonceRetry<T>(label: string, fn: () => Promise<T>): Promise<T
       last = err;
       if (!isNonceError(err) || i === NONCE_RETRY_TRIES) throw err;
       console.log(
-        `${label}: InvalidNonce (percobaan ${i}/${NONCE_RETRY_TRIES}), tunggu ${NONCE_RETRY_DELAY_MS / 1000}s…`,
+        `${label}: InvalidNonce (attempt ${i}/${NONCE_RETRY_TRIES}), waiting ${NONCE_RETRY_DELAY_MS / 1000}s…`,
       );
       await sleep(NONCE_RETRY_DELAY_MS);
     }
@@ -81,7 +87,7 @@ function readAdminKey(file: string): Hex | null {
   const parsed = JSON.parse(readFileSync(file, "utf8")) as { privateKey?: string };
   const key = parsed.privateKey?.trim() ?? "";
   if (!/^0x[0-9a-fA-F]{64}$/.test(key)) {
-    throw new Error(`${file} rusak — hapus file itu lalu jalankan lagi.`);
+    throw new Error(`${file} is invalid — delete it and run again.`);
   }
   return key as Hex;
 }
@@ -90,7 +96,7 @@ function loadOrCreateAdminKey(): Hex {
   const fromEnv = process.env.USER_ADMIN_PRIVATE_KEY?.trim();
   if (fromEnv) {
     if (!/^0x[0-9a-fA-F]{64}$/.test(fromEnv)) {
-      throw new Error("USER_ADMIN_PRIVATE_KEY harus 0x + 64 hex.");
+      throw new Error("USER_ADMIN_PRIVATE_KEY must be 0x + 64 hex.");
     }
     return fromEnv as Hex;
   }
@@ -102,15 +108,15 @@ function loadOrCreateAdminKey(): Hex {
     if (key) {
       writePrivate(ADMIN_FILE, `${JSON.stringify({ privateKey: key }, null, 2)}\n`);
       console.log(
-        `Reuse admin user uji dari ${sibling}. Satu wallet, session Yield baru.`,
+        `Reusing test-user admin from ${sibling}. Same wallet, new Yield session.`,
       );
       return key;
     }
   }
   const privateKey = generatePrivateKey();
   writePrivate(ADMIN_FILE, `${JSON.stringify({ privateKey }, null, 2)}\n`);
-  console.log(`Admin key user uji disimpan di ${ADMIN_FILE} (mode 0600, gitignored).`);
-  console.log("Jangan commit, jangan paste isi file itu di chat.");
+  console.log(`Test-user admin key saved to ${ADMIN_FILE} (mode 0600, gitignored).`);
+  console.log("Do not commit or paste this file in chat.");
   return privateKey;
 }
 
@@ -120,8 +126,8 @@ async function main(): Promise<void> {
   const client = createClient({ chains: [BNB_TESTNET], defaultChainId: 97 });
   const wallet = await client.createWallet({ signer: admin });
 
-  console.log(`Wallet user uji (bukan agent): ${wallet.address}`);
-  console.log("Jangan pakai USER_SESSION_FILE Guard — session Yield terpisah (tanpa repay).");
+  console.log(`Test-user wallet (not the agent): ${wallet.address}`);
+  console.log("Do not reuse a Guard USER_SESSION_FILE — Yield uses a separate session.");
 
   const [native, usdt, usdc] = await Promise.all([
     publicClient.getBalance({ address: wallet.address }),
@@ -145,41 +151,56 @@ async function main(): Promise<void> {
 
   if (native < MIN_NATIVE_WEI) {
     console.log("");
-    console.log(`Danai ≥ 0.02 tBNB ke ${wallet.address} lalu jalankan lagi.`);
+    console.log(`Fund ≥ 0.02 tBNB to ${wallet.address} then run again.`);
     process.exit(2);
   }
 
-  const [usdtAllow, usdcAllow, inMarkets] = await Promise.all([
-    publicClient.readContract({
-      address: USDT,
-      abi: ERC20_ABI,
-      functionName: "allowance",
-      args: [wallet.address, VUSDT],
-    }),
-    publicClient.readContract({
-      address: USDC,
-      abi: ERC20_ABI,
-      functionName: "allowance",
-      args: [wallet.address, VUSDC],
-    }),
-    publicClient.readContract({
-      address: COMPTROLLER,
-      abi: COMPTROLLER_ABI,
-      functionName: "getAssetsIn",
-      args: [wallet.address],
-    }),
-  ]);
+  const [usdtAllowV, usdcAllowV, usdtAllowSwap, wbnbAllowSwap, inMarkets] =
+    await Promise.all([
+      publicClient.readContract({
+        address: USDT,
+        abi: ERC20_ABI,
+        functionName: "allowance",
+        args: [wallet.address, VUSDT],
+      }),
+      publicClient.readContract({
+        address: USDC,
+        abi: ERC20_ABI,
+        functionName: "allowance",
+        args: [wallet.address, VUSDC],
+      }),
+      publicClient.readContract({
+        address: USDT,
+        abi: ERC20_ABI,
+        functionName: "allowance",
+        args: [wallet.address, VENUS_SWAP_ROUTER],
+      }),
+      publicClient.readContract({
+        address: WBNB,
+        abi: ERC20_ABI,
+        functionName: "allowance",
+        args: [wallet.address, VENUS_SWAP_ROUTER],
+      }),
+      publicClient.readContract({
+        address: COMPTROLLER,
+        abi: COMPTROLLER_ABI,
+        functionName: "getAssetsIn",
+        args: [wallet.address],
+      }),
+    ]);
   const entered = new Set(inMarkets.map((a) => a.toLowerCase()));
   const needAdmin =
-    usdtAllow === 0n ||
-    usdcAllow === 0n ||
+    usdtAllowV === 0n ||
+    usdcAllowV === 0n ||
+    usdtAllowSwap === 0n ||
+    wbnbAllowSwap === 0n ||
     !entered.has(VUSDT.toLowerCase()) ||
     !entered.has(VUSDC.toLowerCase()) ||
     !entered.has(VBNB.toLowerCase());
 
   if (needAdmin) {
     const calls = [];
-    if (usdtAllow === 0n) {
+    if (usdtAllowV === 0n) {
       calls.push({
         to: USDT,
         data: encodeFunctionData({
@@ -189,13 +210,33 @@ async function main(): Promise<void> {
         }),
       });
     }
-    if (usdcAllow === 0n) {
+    if (usdcAllowV === 0n) {
       calls.push({
         to: USDC,
         data: encodeFunctionData({
           abi: ERC20_ABI,
           functionName: "approve",
           args: [VUSDC, (1n << 256n) - 1n],
+        }),
+      });
+    }
+    if (usdtAllowSwap === 0n) {
+      calls.push({
+        to: USDT,
+        data: encodeFunctionData({
+          abi: ERC20_ABI,
+          functionName: "approve",
+          args: [VENUS_SWAP_ROUTER, (1n << 256n) - 1n],
+        }),
+      });
+    }
+    if (wbnbAllowSwap === 0n) {
+      calls.push({
+        to: WBNB,
+        data: encodeFunctionData({
+          abi: ERC20_ABI,
+          functionName: "approve",
+          args: [VENUS_SWAP_ROUTER, (1n << 256n) - 1n],
         }),
       });
     }
@@ -214,7 +255,7 @@ async function main(): Promise<void> {
       });
     }
 
-    console.log("Admin execute: approve vUSDT/vUSDC + enterMarkets…");
+    console.log("Admin execute: approve vTokens + Venus SwapRouter + enterMarkets…");
     const approved = await client.execute({
       wallet,
       signer: admin,
@@ -225,25 +266,28 @@ async function main(): Promise<void> {
       `admin ${approved.status} ${approved.transactionHash ?? approved.callsId ?? ""}`,
     );
     if (approved.status === "FAILED") {
-      throw new Error("Admin approve/enterMarkets FAILED — cek BscScan alamat user uji.");
+      throw new Error("Admin approve/enterMarkets FAILED — check BscScan for the user wallet.");
     }
-    console.log("Tunggu nonce Keystore sebelum grantSession…");
+    console.log("Waiting for Keystore nonce before grantSession…");
     await sleep(NONCE_RETRY_DELAY_MS);
   } else {
-    console.log("Approve + enterMarkets sudah ada — skip (hindari InvalidNonce).");
+    console.log("Approvals + enterMarkets already set — skipping (avoids InvalidNonce).");
   }
 
   const sessionKey = generatePrivateKey();
   const sessionSigner = signerFromPrivateKey(sessionKey);
   const expiry = Math.floor(Date.now() / 1000) + EXPIRY_DAYS * 24 * 60 * 60;
+  const permissions = yieldSessionPermissions(SPEND_LIMIT);
 
-  console.log("grantSession Yield (Venus mint/redeem, 30 hari)…");
+  console.log(
+    `grantSession Yield (Core Pool + SwapRouter, ${EXPIRY_DAYS}d, stable cap ${SPEND_LIMIT.toString()} raw)…`,
+  );
   const granted = await withNonceRetry("grantSession", () =>
     client.grantSession({
       wallet,
       signer: admin,
       sessionSigner,
-      permissions: yieldSessionPermissions(),
+      permissions,
       expiry,
       register: true,
       chainId: 97,
@@ -255,16 +299,19 @@ async function main(): Promise<void> {
 
   mkdirSync(STUDIO_DIR, { recursive: true });
   writePrivate(SESSION_FILE, `${serializeSession(granted)}\n`);
-  console.log(`Session user: ${SESSION_FILE}`);
+  console.log(`User session: ${SESSION_FILE}`);
   console.log("");
-  console.log("Tambah ke agents/yieldrouter/.studio/.env.local:");
+  console.log("Add to agents/yieldrouter/.studio/.env.local:");
   console.log(`USER_SESSION_FILE=${SESSION_FILE}`);
   console.log("ERC8183_AGENT_URL=http://127.0.0.1:9004/erc8183");
   console.log("");
-  console.log("Lalu restart `bag dev --port 9004`.");
-  console.log("Cek: curl -s http://localhost:9004/strategy  (bukan :9000).");
+  console.log("Restart the agent, then:");
+  console.log("  curl -s http://localhost:9000/strategy | jq");
+  console.log("  curl -s http://localhost:9000/session | jq");
+  console.log("");
+  console.log("Revoke anytime from your Altana wallet (passkey) — see /session revoke.altanaKeyUrl.");
   if (usdt === 0n && usdc === 0n) {
-    console.log("USDT/USDC masih 0 — tick akan `blocked` sampai ada underlying idle.");
+    console.log("USDT/USDC still 0 — ticks stay blocked until idle underlying is funded.");
   }
 }
 

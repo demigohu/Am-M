@@ -1,7 +1,17 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 import { HirePanel } from "../hire/HirePanel";
+import { SessionBudgetControls } from "../hire/SessionBudgetControls";
 import { Icon } from "../ui/Icon";
 import { protocolOfDesk } from "../../lib/altana/chain";
+import {
+  buildSessionBudget,
+  defaultSessionBudgetInput,
+  formatSessionBudgetSummary,
+  type SessionBudgetInput,
+} from "../../lib/altana/sessionBudget";
 import { DESK_PROVIDER, type Agent, type Desk } from "../../lib/catalog";
 import { DESK_HEX } from "../../lib/stitch-styles";
 import { formatU, shortAddress } from "../../lib/format";
@@ -9,6 +19,11 @@ import { formatU, shortAddress } from "../../lib/format";
 export function HireCheckoutView({ agent, desk }: { agent: Agent; desk: Desk }) {
   const hex = DESK_HEX[agent.desk];
   const protocol = protocolOfDesk(agent.desk);
+  const [budgetInput, setBudgetInput] = useState<SessionBudgetInput>(
+    defaultSessionBudgetInput(),
+  );
+  const budget = buildSessionBudget(budgetInput);
+  const budgetSummary = formatSessionBudgetSummary(budget);
 
   return (
     <div className="mx-auto w-full max-w-[1200px] px-6 py-10">
@@ -50,7 +65,6 @@ export function HireCheckoutView({ agent, desk }: { agent: Agent; desk: Desk }) 
       </div>
 
       <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
-        {/* Left: policy dossier */}
         <section className="rounded-[20px] border-2 border-ink bg-bone p-7 md:p-8 lg:col-span-7">
           <div className="mb-6 flex items-center justify-between border-b border-ink pb-5">
             <div className="flex items-center gap-2">
@@ -112,15 +126,20 @@ export function HireCheckoutView({ agent, desk }: { agent: Agent; desk: Desk }) 
             </div>
           </div>
 
+          <div className="mb-7">
+            <h3 className="mb-3 font-display text-xl font-bold">Session budget & lease</h3>
+            <SessionBudgetControls value={budgetInput} onChange={setBudgetInput} />
+          </div>
+
           <div>
             <h3 className="mb-3 text-sm font-bold tracking-wider text-char uppercase">
-              Fixed Session Parameters
+              Grant summary
             </h3>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {[
-                ["Session collateral cap", "100 USDT/USDC + 0.1 tBNB"],
-                ["Session lease expiry", "30 days"],
-                ["Target", agent.pair],
+                ["Daily spend cap", budgetSummary.spendLabel],
+                ["Native cap", budgetSummary.nativeLabel],
+                ["Session lease", budgetSummary.leaseLabel],
                 ["Target network", "BSC Testnet (ID: 97)"],
               ].map(([k, v]) => (
                 <div
@@ -143,7 +162,6 @@ export function HireCheckoutView({ agent, desk }: { agent: Agent; desk: Desk }) 
           </div>
         </section>
 
-        {/* Right: retainer summary */}
         <aside className="sticky top-24 flex flex-col gap-5 lg:col-span-5">
           <div className="rounded-[20px] border-2 border-ink bg-bone p-7">
             <div className="flex items-center justify-between border-b border-ink pb-4">
@@ -167,16 +185,25 @@ export function HireCheckoutView({ agent, desk }: { agent: Agent; desk: Desk }) 
                 <span className="font-bold">{formatU(agent.priceWei)} $U</span>
               </div>
               <div className="flex justify-between">
+                <span className="text-char">Daily cap:</span>
+                <span className="font-bold">{budgetSummary.spendLabel}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-char">Lease:</span>
+                <span className="font-bold">{budgetSummary.leaseLabel}</span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-char">Session setup gas:</span>
                 <span className="font-bold text-status-green">From your vault</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-char">Key enclave:</span>
-                <span className="font-bold">Hardware passkey</span>
-              </div>
             </div>
             <div className="py-5">
-              <HirePanel agent={agent} desk={desk} variant="checkout" />
+              <HirePanel
+                agent={agent}
+                desk={desk}
+                variant="checkout"
+                budgetInput={budgetInput}
+              />
             </div>
           </div>
         </aside>

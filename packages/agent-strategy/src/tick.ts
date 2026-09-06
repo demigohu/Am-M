@@ -1,5 +1,6 @@
 import type { Session } from "@altananetwork/sdk";
 import type { DeskRunner } from "./desks.js";
+import { loadSessionPolicies } from "./session-policy.js";
 import { loadUserSessions } from "./sessions.js";
 import { jsonSafe, riskProfile, type ExecuteFn, type TickReport } from "./types.js";
 
@@ -40,7 +41,7 @@ export function createTickLoop(opts: {
         state.last = {
           idle: "no USER_SESSION / USER_SESSION_FILE / USER_SESSIONS_DIR",
         };
-        log.info("tidak ada session user — tick idle (bukan agent wallet).");
+        log.info("no user session — tick idle (not agent wallet).");
         return;
       }
       const variant = riskProfile();
@@ -62,14 +63,14 @@ export function createTickLoop(opts: {
           );
         } catch (e) {
           log.error(
-            `session ${session.walletAddress} gagal (lanjut session berikutnya)`,
+            `session ${session.walletAddress} failed (continuing with next session)`,
             e,
           );
         }
       }
       state.last = jsonSafe(reports) as TickReport[];
     } catch (e) {
-      log.error("tick gagal", e);
+      log.error("tick failed", e);
     } finally {
       locked = false;
       state.running = false;
@@ -93,6 +94,17 @@ export function createTickLoop(opts: {
       };
     },
   };
+}
+
+/** User-facing session policy for all loaded sessions (no private keys). */
+export async function sessionPoliciesForLoadedSessions(): Promise<
+  Awaited<ReturnType<typeof loadSessionPolicies>> | { idle: string }
+> {
+  const sessions = await loadUserSessions();
+  if (sessions.length === 0) {
+    return { idle: "no USER_SESSION / USER_SESSION_FILE / USER_SESSIONS_DIR" };
+  }
+  return loadSessionPolicies(sessions);
 }
 
 export async function runOnce(

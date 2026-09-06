@@ -1,7 +1,7 @@
 "use client";
 
 import { formatEther, formatUnits, type Address } from "viem";
-import { ERC20_ABI, MIN_NATIVE_WEI, TOKEN_U, USDC, USDT } from "./chain";
+import { ERC20_ABI, MIN_NATIVE_WEI, STABLE_DECIMALS, TOKEN_U, TOKEN_U_DECIMALS, USDC, USDT } from "./chain";
 import { publicClient } from "./rpc";
 
 export type VaultBalances = {
@@ -16,8 +16,8 @@ export type VaultBalances = {
   funded: boolean;
 };
 
-function tokenLabel(value: bigint): string {
-  const n = Number(formatUnits(value, 18));
+function tokenLabel(value: bigint, decimals: number): string {
+  const n = Number(formatUnits(value, decimals));
   if (!Number.isFinite(n)) return value.toString();
   return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
@@ -50,11 +50,11 @@ export async function readVault(address: Address): Promise<VaultBalances> {
     native,
     nativeLabel: Number(formatEther(native)).toFixed(4),
     usdt,
-    usdtLabel: tokenLabel(usdt),
+    usdtLabel: tokenLabel(usdt, STABLE_DECIMALS),
     usdc,
-    usdcLabel: tokenLabel(usdc),
+    usdcLabel: tokenLabel(usdc, STABLE_DECIMALS),
     u,
-    uLabel: tokenLabel(u),
+    uLabel: tokenLabel(u, TOKEN_U_DECIMALS),
     funded: native >= MIN_NATIVE_WEI,
   };
 }

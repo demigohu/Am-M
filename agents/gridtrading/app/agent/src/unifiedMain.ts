@@ -96,7 +96,7 @@ import express from "express";
 import { buildAgentCard } from "./agentCard.js";
 import { SellerAgentExecutor } from "./executor.js";
 import type { RunWork } from "./sellerCore.js";
-import { startStrategyTick, strategyStatus } from "./tick.js";
+import { startStrategyTick, strategyStatus, sessionStatus } from "./tick.js";
 import { runHiredJob } from "./work.js";
 
 const APP_NAME = "agent";
@@ -514,6 +514,9 @@ async function main(): Promise<void> {
   });
   app.get("/strategy", (_req, res) => {
     res.json(strategyStatus());
+  });
+  app.get("/session", async (_req, res) => {
+    res.json(await sessionStatus());
   });
 
   if (seller.state !== "disabled") {

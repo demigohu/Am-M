@@ -1,6 +1,7 @@
 import type { Address, Hex } from "viem";
 import type { PasskeyCredential } from "@altananetwork/sdk";
 import type { DeskSlug } from "../catalog";
+import type { SessionBudgetLimits } from "./sessionBudget";
 
 const WALLET_KEY = "amm.wallet";
 const HIRES_KEY = "amm.hires";
@@ -25,6 +26,8 @@ export type StoredHire = {
   envelope: string;
   createdAt: number;
   status: "active" | "revoked";
+  /** User-chosen daily spend caps + lease at hire time. */
+  sessionBudget?: SessionBudgetLimits;
 };
 
 export function getStoredWallet(): StoredWallet | null {

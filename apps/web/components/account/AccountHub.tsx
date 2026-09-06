@@ -31,6 +31,7 @@ import {
   upsertHire,
   type StoredHire,
 } from "../../lib/altana/storage";
+import { budgetFromHire, formatSessionBudgetSummary } from "../../lib/altana/sessionBudget";
 import { formatU, shortAddress } from "../../lib/format";
 import { createAccount, openWallet, recoverAccount } from "../../lib/altana/wallet";
 import { AGENTS, DESKS } from "../../lib/catalog";
@@ -666,6 +667,7 @@ function AgentsTable({
           <tr className="border-b-2 border-ink font-mono text-[11px] tracking-wider text-char uppercase">
             <th className="px-3 py-3">Agent</th>
             <th className="px-3 py-3">Category</th>
+            <th className="px-3 py-3">Daily cap</th>
             <th className="px-3 py-3">Retainer</th>
             <th className="px-3 py-3">Lease</th>
             <th className="px-3 py-3 text-right">Action</th>
@@ -677,6 +679,7 @@ function AgentsTable({
             const desk = deskByHire(hire.desk);
             const hex = desk ? DESK_HEX[desk.slug] : "#666664";
             const expiry = hire.status === "revoked" ? "REVOKED" : remainingLabel(hire.expiry);
+            const budget = formatSessionBudgetSummary(budgetFromHire(hire));
             const isUrgent =
               hire.status === "active" && hire.expiry * 1000 - Date.now() < 24 * 60 * 60 * 1000;
 
@@ -715,6 +718,9 @@ function AgentsTable({
                   ) : (
                     hire.desk
                   )}
+                </td>
+                <td className="px-3 py-4 font-mono text-[11px] text-char">
+                  {budget.spendLabel}
                 </td>
                 <td className="px-3 py-4 font-medium">
                   {agent ? `${formatU(agent.priceWei)} $U` : "—"}

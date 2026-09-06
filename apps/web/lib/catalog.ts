@@ -79,9 +79,9 @@ export const DESKS: Desk[] = [
     name: "Yield",
     mark: "VENUS PARK",
     color: "bg-desk-yield",
-    job: "Parks idle USDT/USDC/BNB into matching Venus vTokens on testnet.",
+    job: "Routes wallet funds to the top Venus Core Pool vToken by testnet APR.",
     blurb:
-      "Mints the matching vToken. Does not swap across underlyings. Testnet APR on /strategy is the execution figure — not mainnet Lista/Aave.",
+      "Ranks ~46 Core Pool markets via Venus API, rotates with Venus SwapRouter. Testnet APR on /strategy — not mainnet context.",
     protocol: "Venus Core Pool (testnet)",
     protocolHref: "https://app.venus.io",
     listingsLabel: "1 SELLER",
@@ -187,7 +187,7 @@ export const AGENTS: Agent[] = [
     endpoint: "https://yieldrouter.ammlabs.fun/",
     strategyUrl: "https://yieldrouter.ammlabs.fun/strategy",
     summary:
-      "Park idle tokens in Venus vUSDT/vUSDC/vBNB on BSC testnet. Rotate only when the testnet APR gap exceeds the variant threshold. Not a cross-protocol router.",
+      "Route wallet funds to the top Venus Core Pool vToken by testnet APR. Rotates via Venus SwapRouter when the gap exceeds the variant threshold.",
     engine: "packages/agent-strategy · runYieldTick",
     executes:
       "Mints the matching vToken for idle USDT, USDC, or BNB. Will not swap across underlyings — that is outside the session allowlist.",
