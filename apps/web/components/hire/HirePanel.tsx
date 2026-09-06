@@ -22,7 +22,15 @@ import { openWallet } from "../../lib/altana/wallet";
 import { DESK_PROVIDER, type Agent, type Desk } from "../../lib/catalog";
 import { formatU } from "../../lib/format";
 
-export function HirePanel({ agent, desk }: { agent: Agent; desk: Desk }) {
+export function HirePanel({
+  agent,
+  desk,
+  variant = "default",
+}: {
+  agent: Agent;
+  desk: Desk;
+  variant?: "default" | "checkout";
+}) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [step, setStep] = useState<string | null>(null);
@@ -152,6 +160,68 @@ export function HirePanel({ agent, desk }: { agent: Agent; desk: Desk }) {
     }
   }
 
+  if (variant === "checkout") {
+    return (
+      <>
+        <div className="mb-5 space-y-3">
+          <div className="flex items-center gap-3 rounded-lg border border-ink bg-[#f7eeca] p-2.5">
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-ink bg-status-green text-bone">
+              <Icon name="check" className="text-sm" />
+            </div>
+            <div>
+              <div className="text-sm font-bold">Step 1: Protocol approved</div>
+              <div className="truncate font-mono text-[11px] text-status-green">
+                {desk.protocol} allowlisted
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 rounded-lg border-2 border-ink bg-bone p-2.5">
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-ink bg-marigold font-mono text-[11px] font-bold">
+              2
+            </div>
+            <div>
+              <div className="text-sm font-bold">Step 2: Sign session delegation</div>
+              <div className="font-mono text-[11px]">Awaiting Passkey WebAuthn prompt</div>
+            </div>
+          </div>
+        </div>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void onGrant()}
+          className="flex w-full items-center justify-center gap-2 rounded-full border-2 border-ink bg-marigold py-4 text-[15px] font-bold transition-all hover:bg-marigold-dim active:translate-y-px disabled:opacity-60"
+        >
+          <Icon name="fingerprint" />
+          {busy ? step ?? "Working…" : `Grant session & pay ${formatU(agent.priceWei)} $U`}
+        </button>
+        {error ? (
+          <p className="mt-3 rounded-xl border border-ink bg-buttercream p-3 text-[13px] text-status-red">
+            {error}
+          </p>
+        ) : null}
+        <div className="mt-4 flex items-start gap-2 text-char">
+          <Icon name="security" className="mt-0.5 shrink-0" />
+          <p className="text-[13px] leading-tight">
+            Protected by WebAuthn passkey. Revoke anytime from{" "}
+            <Link href="/account" className="font-bold underline">
+              Account
+            </Link>
+            .
+            {!hasWallet ? (
+              <>
+                {" "}
+                <Link href={`/account?next=/hire/${agent.id}`} className="font-bold underline">
+                  Create account
+                </Link>{" "}
+                first.
+              </>
+            ) : null}
+          </p>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <ol className="mb-6 space-y-3 text-sm">
@@ -181,16 +251,15 @@ export function HirePanel({ agent, desk }: { agent: Agent; desk: Desk }) {
         className="mb-3 flex w-full items-center justify-center gap-2 rounded-full border-2 border-ink bg-marigold px-5 py-3 text-sm font-bold hover:bg-marigold-dim disabled:opacity-60"
       >
         <Icon name="fingerprint" />
-        {busy ? step ?? "Working…" : `Grant session · ${formatU(agent.priceWei)} $U`}
+        {busy ? step ?? "Working…" : `Grant session & pay ${formatU(agent.priceWei)} $U`}
       </button>
       {error ? (
-        <p className="mb-3 rounded-xl border border-ink bg-surface p-3 text-[13px] text-status-red">
+        <p className="mb-3 rounded-xl border border-ink bg-buttercream p-3 text-[13px] text-status-red">
           {error}
         </p>
       ) : null}
       <p className="text-[13px] text-char">
-        Requires Touch ID / Face ID / WebAuthn hardware passkey signature. Session private key is
-        scoped, expiring, and revocable.{" "}
+        Requires Touch ID / Face ID / WebAuthn hardware passkey signature.{" "}
         {!hasWallet ? (
           <>
             No account yet?{" "}

@@ -18,6 +18,16 @@ export function urlBscTx(hash: string): string {
   return `${EXPLORER}/tx/${hash}`;
 }
 
+/** Altana Keystore explorer — search by vault wallet (not a BscScan-style tx URL). */
+export function urlAltanaLookup(walletOrKey: string): string {
+  return `${ALTANA_EXPLORER}/?q=${encodeURIComponent(walletOrKey)}`;
+}
+
+/** Direct Keystore key page — register / revoke status for a session key. */
+export function urlAltanaKey(keyId: string): string {
+  return `${ALTANA_EXPLORER}/key/${keyId}`;
+}
+
 export const COMPTROLLER = "0x94d1820b2D1c7c7452A163983Dc888CEC546b77D" as Address;
 export const VUSDT = "0xb7526572FFE56AB9D7489838Bf2E18e3323b441A" as Address;
 export const USDT = "0xA11c8D9DC9b66E209Ef60F0C8D969D3CD988782c" as Address;

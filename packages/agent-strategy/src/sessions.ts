@@ -60,25 +60,37 @@ async function loadFromIndexer(): Promise<Session[]> {
   const desk = process.env.AMM_DESK?.trim();
   const encKey = process.env.SESSION_KEY_ENCRYPTION_KEY?.trim();
   if (!base || !secret || !desk || !encKey) return [];
-  const res = await fetch(`${base}/v1/sessions?desk=${encodeURIComponent(desk)}`, {
-    headers: { authorization: `Bearer ${secret}` },
-  });
-  if (!res.ok) {
-    console.warn(`[strategy.tick] indexer sessions ${res.status}`);
+  try {
+    const res = await fetch(`${base}/v1/sessions?desk=${encodeURIComponent(desk)}`, {
+      headers: { authorization: `Bearer ${secret}` },
+      signal: AbortSignal.timeout(8_000),
+    });
+    if (!res.ok) {
+      console.warn(`[strategy.tick] indexer sessions ${res.status}`);
+      return [];
+    }
+    const body = (await res.json()) as {
+      items?: { envelope?: string; envelopeCipher?: string }[];
+    };
+    const out: Session[] = [];
+    for (const item of body.items ?? []) {
+      try {
+        const raw = item.envelope
+          ? item.envelope
+          : item.envelopeCipher
+            ? decryptEnvelope(item.envelopeCipher, encKey)
+            : "";
+        if (!raw.trim()) continue;
+        out.push(await deserializeSession(raw));
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "decode failed";
+        console.warn(`[strategy.tick] indexer session skipped: ${message}`);
+      }
+    }
+    return out;
+  } catch (err) {
+    const cause = err instanceof Error ? err.message : "fetch failed";
+    console.warn(`[strategy.tick] indexer unreachable (${cause}) — tick idle`);
     return [];
   }
-  const body = (await res.json()) as {
-    items?: { envelope?: string; envelopeCipher?: string }[];
-  };
-  const out: Session[] = [];
-  for (const item of body.items ?? []) {
-    const raw = item.envelope
-      ? item.envelope
-      : item.envelopeCipher
-        ? decryptEnvelope(item.envelopeCipher, encKey)
-        : "";
-    if (!raw.trim()) continue;
-    out.push(await deserializeSession(raw));
-  }
-  return out;
 }

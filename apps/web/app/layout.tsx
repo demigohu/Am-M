@@ -24,6 +24,10 @@ export const metadata: Metadata = {
   title: "Am-M — Hire a DeFi agent. You keep the keys.",
   description:
     "Agent marketplace on BNB Chain. Pick a job, grant a bounded session, let the agent transact.",
+  icons: {
+    icon: [{ url: "/brand/peanut-favicon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/brand/peanut-favicon.svg", type: "image/svg+xml" }],
+  },
 };
 
 export default function RootLayout({

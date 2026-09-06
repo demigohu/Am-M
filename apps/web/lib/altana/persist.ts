@@ -17,7 +17,14 @@ export async function postSessionFile(input: {
   });
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(text || `Session persist failed (${res.status})`);
+    let detail = `Session persist failed (${res.status})`;
+    try {
+      const body = JSON.parse(text) as { error?: string };
+      if (body.error) detail = body.error;
+    } catch {
+      if (text) detail = text.slice(0, 300);
+    }
+    throw new Error(detail);
   }
 }
 

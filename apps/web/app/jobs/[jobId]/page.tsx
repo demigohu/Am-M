@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AppShell } from "../../../components/layout/AppShell";
+import { AppLayout } from "../../../components/layout/AppLayout";
 import { JobView } from "../../../components/jobs/JobView";
 
 export default async function JobPage({
@@ -10,8 +10,8 @@ export default async function JobPage({
   const { jobId } = await params;
 
   return (
-    <AppShell>
+    <AppLayout>
       <JobView jobId={jobId} />
-    </AppShell>
+    </AppLayout>
   );
 }

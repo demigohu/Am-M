@@ -1,4 +1,4 @@
-import { AppShell } from "../../components/layout/AppShell";
+import { AppLayout } from "../../components/layout/AppLayout";
 import { AccountHub } from "../../components/account/AccountHub";
 
 export default async function AccountPage({
@@ -10,8 +10,8 @@ export default async function AccountPage({
   const hireNext = next && next.startsWith("/") ? next : "/market";
 
   return (
-    <AppShell>
+    <AppLayout>
       <AccountHub next={hireNext} />
-    </AppShell>
+    </AppLayout>
   );
 }

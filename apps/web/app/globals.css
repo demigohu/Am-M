@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @theme {
+  /* Canvas & surfaces — canonical DESIGN.md only */
   --color-buttercream: #fff6d2;
   --color-bone: #ffffff;
   --color-ink: #000000;
@@ -8,20 +9,28 @@
   --color-marigold-dim: #ebc700;
   --color-oat: #cccbc7;
   --color-char: #666664;
-  --color-surface: #fff9eb;
-  --color-surface-low: #fdf4d0;
-  --color-surface-high: #ebe3c0;
+
+  /* Semantic status */
   --color-status-green: #1f8a5f;
   --color-status-amber: #b8790a;
   --color-status-red: #c23b30;
+
+  /* Desk marks */
   --color-desk-rebalance: #4a63c4;
   --color-desk-grid: #7c4ac4;
   --color-desk-yield: #1f8a5f;
   --color-desk-guard: #c23b30;
+
+  /* Layout tokens */
+  --spacing-page: 1200px;
+  --radius-card: 1.25rem;
+  --radius-input: 1rem;
+  --radius-pill: 9999px;
+  --shadow-md: rgba(70, 58, 0, 0.1) 0px 4px 12px 0px;
+
   --font-display: var(--font-roboto-slab), ui-serif, Georgia, serif;
   --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-dm-mono), ui-monospace, SFMono-Regular, monospace;
-  --radius-card: 1.25rem;
 }
 
 html,
@@ -31,19 +40,40 @@ body {
 }
 
 body {
-  background: #fff6d2;
-  color: #000000;
+  background: var(--color-buttercream);
+  color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
 ::selection {
-  background: #ffd801;
-  color: #000000;
+  background: var(--color-marigold);
+  color: var(--color-ink);
 }
 
 .font-tabular {
   font-variant-numeric: tabular-nums;
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 .material-symbols-outlined {

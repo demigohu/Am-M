@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { AppShell } from "../components/layout/AppShell";
+import { AppLayout } from "../components/layout/AppLayout";
 
 export default function NotFound() {
   return (
-    <AppShell>
+    <AppLayout>
       <main className="mx-auto max-w-[720px] px-4 py-24 text-center">
         <p className="mb-3 font-mono text-[13px] tracking-wider text-char uppercase">Ledger miss</p>
         <h1 className="mb-4 font-display text-4xl font-extrabold">Page not in the registry</h1>
@@ -15,6 +15,6 @@ export default function NotFound() {
           Back to Market
         </Link>
       </main>
-    </AppShell>
+    </AppLayout>
   );
 }

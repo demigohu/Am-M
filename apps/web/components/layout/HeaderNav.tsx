@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Icon } from "../ui/Icon";
 
-const marketPaths = ["/market", "/desks", "/agents", "/hire", "/jobs"];
+const marketPaths = ["/market", "/agents", "/hire", "/jobs"];
 
 function isActive(pathname: string, href: string) {
   if (href === "/market") {
@@ -16,43 +15,34 @@ function isActive(pathname: string, href: string) {
 export function HeaderNav() {
   const pathname = usePathname();
 
+  const navLink = (href: string, label: string) => {
+    const active = isActive(pathname, href);
+    return (
+      <Link
+        href={href}
+        className={`text-[15px] transition-colors ${
+          active
+            ? "border-b-2 border-ink pb-1 font-bold text-ink"
+            : "font-bold text-char hover:text-ink"
+        }`}
+      >
+        {label}
+      </Link>
+    );
+  };
+
   return (
-    <div className="flex items-center gap-6">
-      <nav className="flex items-center gap-6 md:gap-8">
-        <Link
-          href="/#how-it-works"
-          className="hidden text-[15px] text-ink underline-offset-4 hover:underline md:inline"
-        >
-          How it works
-        </Link>
-        <Link
-          href="/report"
-          className={`hidden text-[15px] text-ink underline-offset-4 hover:underline md:inline ${
-            isActive(pathname, "/report") ? "font-bold underline decoration-2" : ""
-          }`}
-        >
-          Report
-        </Link>
-        <Link
-          href="/market"
-          className={`text-[15px] text-ink underline-offset-4 hover:underline ${
-            isActive(pathname, "/market") ? "font-bold underline decoration-2" : ""
-          }`}
-        >
-          Market
-        </Link>
+    <>
+      <nav className="hidden items-center gap-8 sm:flex">
+        {navLink("/market", "Market")}
+        {navLink("/report", "Report")}
       </nav>
       <Link
         href="/account"
-        aria-label="Account"
-        className={`flex h-9 w-9 items-center justify-center rounded-full border border-ink ${
-          isActive(pathname, "/account")
-            ? "bg-ink text-bone"
-            : "bg-[#6f5d00] text-white hover:bg-ink"
-        }`}
+        className="inline-flex items-center justify-center rounded-full border-2 border-ink bg-bone px-4 py-1.5 font-mono text-sm text-ink transition-colors hover:bg-buttercream"
       >
-        <Icon name="person" className="text-[18px]" />
+        Account
       </Link>
-    </div>
+    </>
   );
 }

@@ -59,7 +59,8 @@ ponder.on("Tick:block", async ({ event, context }) => {
   }
 
   const now = event.block.timestamp;
-  const fromBlock = event.block.number > 40n ? event.block.number - 40n : 0n;
+  const defaultLookback = event.block.number > 5000n ? event.block.number - 5000n : 0n;
+  const LOG_CHUNK = 2000n;
 
   for (const session of sessions) {
     const wallet = session.wallet as Hex;
@@ -131,32 +132,50 @@ ponder.on("Tick:block", async ({ event, context }) => {
     }
 
     try {
-      const logs = await context.client.getLogs({
-        address: [...TRACKED],
-        event: transferEvent,
-        fromBlock,
-        toBlock: event.block.number,
-      });
-      for (const log of logs) {
-        const from = log.args.from?.toLowerCase();
-        const to = log.args.to?.toLowerCase();
-        if (from !== wallet.toLowerCase() && to !== wallet.toLowerCase()) continue;
-        const target = (to ?? from ?? wallet) as Hex;
-        const verified = to === wallet.toLowerCase();
-        await context.db
-          .insert(agentExecution)
-          .values({
-            id: `${log.transactionHash}-${log.logIndex}`,
-            sessionId: session.id,
-            wallet,
-            txHash: log.transactionHash,
-            target,
-            value: log.args.value ?? 0n,
-            recipientsVerified: verified,
-            timestamp: now,
-            blockNumber: event.block.number,
-          })
-          .onConflictDoNothing();
+      let scanFrom = defaultLookback;
+      if (session.grantTx) {
+        try {
+          const receipt = await context.client.getTransactionReceipt({
+            hash: session.grantTx as Hex,
+          });
+          scanFrom = receipt.blockNumber;
+        } catch {
+          /* grant receipt optional */
+        }
+      }
+
+      let chunkStart = scanFrom;
+      while (chunkStart <= event.block.number) {
+        const chunkEnd =
+          chunkStart + LOG_CHUNK > event.block.number ? event.block.number : chunkStart + LOG_CHUNK;
+        const logs = await context.client.getLogs({
+          address: [...TRACKED],
+          event: transferEvent,
+          fromBlock: chunkStart,
+          toBlock: chunkEnd,
+        });
+        for (const log of logs) {
+          const from = log.args.from?.toLowerCase();
+          const to = log.args.to?.toLowerCase();
+          if (from !== wallet.toLowerCase() && to !== wallet.toLowerCase()) continue;
+          const target = (to ?? from ?? wallet) as Hex;
+          const verified = to === wallet.toLowerCase();
+          await context.db
+            .insert(agentExecution)
+            .values({
+              id: `${session.id}-${log.transactionHash}-${log.logIndex}`,
+              sessionId: session.id,
+              wallet,
+              txHash: log.transactionHash,
+              target,
+              value: log.args.value ?? 0n,
+              recipientsVerified: verified,
+              timestamp: now,
+              blockNumber: log.blockNumber,
+            })
+            .onConflictDoNothing();
+        }
+        chunkStart = chunkEnd + 1n;
       }
     } catch {
       /* RPC getLogs window can fail; next tick retries */

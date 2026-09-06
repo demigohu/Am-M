@@ -181,3 +181,100 @@ Through the 8004scan developer API, you can access structured agent identity, ca
 
 - PancakeSwap Developer Portal
 - PancakeSwap Documentation
+
+---
+
+## Article
+
+### Build the Era: Build the Official BNB Agent Studio Marketplace
+
+_2026.8.5 • 4 min read_
+
+## TL;DR
+
+- Build the Era is an open hackathon to build the best AI agent marketplace on BNB Smart Chain.
+- The winner has the chance to become the officially adopted BNB Agent Studio marketplace, as a standalone product.
+- $40,000+ in prizes from BNB Chain and ecosystem partners on top, plus token and credit rewards.
+- Open to solo builders and teams.
+- Submissions run Aug 5 – Sep 9. [Register here](#).
+
+## Agents are landing on BNB Chain faster than anyone can find them
+
+More than 200,000 AI agents are registered on BNB Smart Chain under ERC-8004, the standard for onchain agent identity, roughly 60% of all registered agents across 26 networks (BNB Chain AI Agent Landscape, July 2026). But there's no good way to find them: hiring one today means digging through X threads and GitHub repos, with no way to compare what an agent does, whether it's live, or how it has performed. That's a discoverability problem, and it caps the category. Every agent on BSC is only as useful as someone's ability to find and hire it.
+
+Build the Era is a hackathon to fix that, and the start of the Smart Money Era. Smart money used to mean knowing the right people; now it means having the right agents. For that to hold on BSC, someone has to build the place where agents get discovered, compared, and hired. That's the challenge, and the winning build earns the chance to become the officially adopted BNB Agent Studio marketplace.
+
+## The Challenge
+
+Build the best AI agent marketplace on BNB Smart Chain: one venue to browse agents, see what they do and how they've performed, and put them to work. We're asking for the marketplace itself, not a portfolio of agents, and the measure that matters most is how easily someone can find an agent and hire it.
+
+You're not starting from zero. Agents registered under ERC-8004 already carry an onchain identity and a track record other software can look up; your job is to make that legible to a person deciding who to hire. The main challenge is open, with no fixed tracks; three partner tracks with their own prizes and criteria run alongside it (see Partner Tracks below), with Binance x402 used as the payment facilitator in BNB Agent Studio. No marketplace on BNB Chain today looks like what we're after, so there's room to get creative.
+
+## What Winning Means
+
+The winning marketplace is in line to become the officially adopted community marketplace for BNB Agent Studio. Adoption means we back it as a standalone product with its own brand and team, and incubate it as the discoverability layer for agents on BSC. It's something we intend to keep alive, drive users to, and grow with the ecosystem.
+
+For a solo builder or a small team, the prize is a product: real users routed to what you built, and BNB Chain's backing to keep building it. Winning is also additive: taking first place doesn't rule you out of partner track prizes, and one build can win both.
+
+## Ideas for What to List
+
+A marketplace works when it has coverage. To give you a sense of what we expect agents on BSC to look like, we'll share reference agents and skills from our partners to build against, spanning four categories:
+
+- **Monitoring agents**: watching markets, wallets, and positions
+- **Grid trading agents**: running automated strategies within set ranges
+- **Health factor agents**: tracking loan positions and acting before liquidation
+- **Yield agents**: moving capital to where it earns most
+
+Treat these as guidance, not a definitive list or judging criteria. They're there to show the range a marketplace should be able to handle; if yours supports these four well, it can handle what comes next.
+
+## Prizes
+
+Whilst adoption is the headline prize, the prize pool sweetens it:
+
+| Partner     | Prize                                               |
+| ----------- | --------------------------------------------------- |
+| BNB Chain   | $30,000 USDT                                        |
+| TermiX      | $10,000 USDT                                        |
+| PancakeSwap | 1,000 CAKE                                          |
+| AltLayer    | 8004scan Pro plans and AltLLM credits [amounts TBC] |
+| Altana      | 50,000 XP                                           |
+
+## Partner Tracks
+
+Three partner tracks run alongside the main challenge, each with its own prize and judging. You enter through the same intake form and tick the tracks you want; entering a track doesn't affect your main score.
+
+### TermiX: $10,000 USDT Total Prize
+
+TermiX judges on one question: does hiring an agent on your marketplace beat doing the job yourself, and can you prove it? Submissions include an Agent Advantage Report comparing at least three real tasks run with and without an agent, and depth in trading, equities, and security categories is weighted highest. Check out the full criteria and resources on the main hackathon page.
+
+### Altana: 50,000 XP
+
+Best Built with Altana rewards a marketplace where agents transact for themselves inside limits their users set: agents on their own Altana wallets, sessions with real spend caps and expiries registered onchain, and revocation the user can see in the product. Judging reads live onchain transactions in the Altana explorer; testnet counts, mainnet is stronger. Requirements, SDK, and ten production skills via the main hackathon page.
+
+### PancakeSwap: 1,000 CAKE
+
+Agents on your marketplace must deliver a real benefit to PancakeSwap traders or liquidity providers: smarter liquidity management, finding better yields, research that spots demand where new PancakeSwap pools could improve liquidity efficiency, or safe automated swaps using PancakeSwap products without ever putting user funds at risk. Full details can be found via the main hackathon page.
+
+## Judging
+
+Submissions are scored against published criteria covering functionality, data quality, and agent diversity. The full scoring rubric, reference agents, and submission requirements will be available here.
+
+Partner tracks run on their own judging criteria, set by each sponsor. If you're entering a partner track, check that track's page via the hackathon page separately for what it's scored on.
+
+The full scoring rubric, reference agents, and submission requirements will be available at the here when the build period opens.
+
+## How to Enter
+
+Build the Era is open to solo builders and teams, and both are encouraged. If your team already runs agents on BSC, this is a chance to build the venue your own products would benefit from.
+
+Submit your build through the intake form here before the build period closes on Sep 9.
+
+## Key Dates
+
+- **Build period**: Aug 5 – Sep 9
+- **Judging**: Sep 9 – Sep 23
+- **Winner announcement**: Nov 5
+
+## Smart Money, Built by You
+
+The Smart Money Era is BNB Chain's push to make autonomous agents something anyone on BSC can find, hire, and put to work, and it starts with the venue. Check the reference agents, read the scoring criteria, and submit before Sep 9.

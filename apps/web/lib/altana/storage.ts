@@ -71,6 +71,14 @@ export function upsertHire(hire: StoredHire): void {
   window.localStorage.setItem(HIRES_KEY, JSON.stringify(next));
 }
 
+/** Active sessions first, then newest hire within each group. */
+export function sortHiresForDisplay(hires: StoredHire[]): StoredHire[] {
+  return [...hires].sort((a, b) => {
+    if (a.status !== b.status) return a.status === "active" ? -1 : 1;
+    return b.createdAt - a.createdAt;
+  });
+}
+
 export { shortAddress } from "../format";
 
 export function remainingLabel(expiry: number): string {

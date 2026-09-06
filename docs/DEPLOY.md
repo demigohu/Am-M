@@ -10,12 +10,14 @@ Cara jalan lokal: `[RUNNING.md](./RUNNING.md)`.
 
 ## 1. Yang tidak ikut ke VPS
 
+
 | Ada di Mac                                | Di VPS                                                         |
 | ----------------------------------------- | -------------------------------------------------------------- |
 | Keystore admin `.studio/wallets/0x….json` | **Jangan disalin**                                             |
 | `WALLET_PASSWORD`                         | **Jangan**                                                     |
 | `bag wallet new`                          | **Jangan diulang** — keystore baru memutus session + identitas |
 | `user-admin.json` (EOA tes)               | Jangan; production nanti passkey di `/account`                 |
+
 
 Yang **wajib** di VPS:
 
@@ -24,9 +26,11 @@ Yang **wajib** di VPS:
 - Env runtime (lihat §5), **tanpa** password admin
 - Opsional demo sebelum FE: `user-session.json` (session **user** tes), mode `600`
 
-Kalau VPS bocor, penyerang dapat session berbatas (cap harian + expiry), bukan admin key. Cabut dari Mac: `bag wallet session revoke`.
+Kalau VPS bocor, penyerang dapat session berbatas (cap harian + expiry), bukan admin key. Cabut dari Mac: `bag wallet session revoke`.e
 
 ---
+
+
 
 ## 2. Prasyarat server
 
@@ -38,8 +42,10 @@ sudo apt install -y docker.io docker-compose-v2
 sudo usermod -aG docker "$USER"
 # logout/login SSH sekali, lalu: docker ps
 ```
+
 - `bag --version` **0.0.13** di **Mac** (register 8004 dari laptop)
 - Domain **ammlabs.fun**. Empat subdomain (A2A hidup di `/`, bukan path):
+
 
 | Proses       | `AGENT_PORT` | URL publik                          | Wallet agent                                 |
 | ------------ | ------------ | ----------------------------------- | -------------------------------------------- |
@@ -47,6 +53,7 @@ sudo usermod -aG docker "$USER"
 | rebalancing  | 9002         | `https://rebalancing.ammlabs.fun/`  | `0x7f3FA089a0D2F0c48d7EcacF843a03D69793C878` |
 | gridtrading  | 9003         | `https://gridtrading.ammlabs.fun/`  | `0xB4E7De3592E237ceE295499f2D3d876A378698C6` |
 | yieldrouter  | 9004         | `https://yieldrouter.ammlabs.fun/`  | `0x670F9ECAfd03215cE3094097d8172bC3B212Fc6c` |
+
 
 Di DNS registrar, **empat record A** (atau CNAME ke host VPS) ke IP VPS:
 
@@ -66,6 +73,8 @@ Firewall: **80/443** ke dunia. Port 9001–9004, 9000, 8088, **42069**, **5432**
 **9router** harus reachable dari VPS (bukan `127.0.0.1` di Mac). Tanpa itu tick DeFi tetap jalan; penjelasan LLM di deliverable 8183 jatuh ke JSON mentah.
 
 ---
+
+
 
 ## 3. Kode di server
 
@@ -88,6 +97,8 @@ Jangan `pnpm install` hanya di akar Turbo — folder `agents/` di luar workspace
 
 ---
 
+
+
 ## 4. Copy session dari Mac ke VPS
 
 File yang boleh dicopy: `altana-session.json` **saja** (hasil `bag wallet session grant` di Mac). Bukan seluruh folder `.studio/`, bukan `0x….json`, bukan `.env.local` Mac (ada `WALLET_PASSWORD`).
@@ -98,6 +109,8 @@ Ganti dua variabel ini, lalu jalankan **semua perintah dari folder repo di Mac**
 HOST=user@IP_VPS          # contoh: ubuntu@203.0.113.10
 DEST=/opt/am-m
 ```
+
+
 
 ### 4.1 Folder tujuan di VPS
 
@@ -129,6 +142,8 @@ done
 ssh "$HOST" 'chmod 600 Am-M/agents/*/.studio/wallets/altana-session.json'
 ```
 
+
+
 ### 4.3 Cek di VPS (jangan sampai keystore admin ikut)
 
 ```bash
@@ -145,6 +160,8 @@ Kalau file 600 tidak kepakai (masih `644`), di VPS:
 chmod 600 /opt/am-m/agents/*/.studio/wallets/altana-session.json
 ```
 
+
+
 ### 4.4 Opsional — session user tes (sebelum FE)
 
 Hanya untuk demo tick, **satu file per desk** (jangan copy session Guard ke Grid):
@@ -160,11 +177,13 @@ Lalu di `.env.local` VPS set `USER_SESSION_FILE=/opt/am-m/agents/healthfactor/.s
 
 ---
 
+
+
 ## 5. Env runtime di VPS
 
 Satu file: `agents/<nama>/.studio/.env.local` (`chmod 600`). Bukan `.env`, bukan `app/agent/.env`.
 
-`bag` di Mac hanya memuat path itu. Di VPS, proses Node **membaca `.env.local` sendiri** saat boot (cwd `app/agent` → `../../.studio/.env.local`). pm2 `env_file` **bukan** andalan: `pm2 restart --update-env` **tidak** membaca ulang file itu — dia hanya apply blok `env: {}` yang sudah di-cache.
+`bag` di Mac hanya memuat path itu. Di VPS, proses Node **membaca** `.env.local` **sendiri** saat boot (cwd `app/agent` → `../../.studio/.env.local`). pm2 `env_file` **bukan** andalan: `pm2 restart --update-env` **tidak** membaca ulang file itu — dia hanya apply blok `env: {}` yang sudah di-cache.
 
 `ecosystem.config.cjs` sudah set `PUBLIC_AGENT_URL` + `ERC8183_AGENT_URL` per desk (`https://<nama>.ammlabs.fun`). Kalau card masih `localhost`, hampir selalu karena process belum di-start ulang **dari file ecosystem baru**, bukan karena URL salah di nano.
 
@@ -208,6 +227,8 @@ Ulangi untuk 9002 / 9003 / 9004 dan URL desk masing-masing.
 `studio.toml` sudah menunjuk `session_file = "../../.studio/wallets/altana-session.json"` relatif ke `app/agent` — selama cwd pm2 = `app/agent`, file hasil copy di §4 ketemu tanpa `ALTANA_SESSION_FILE`.
 
 ---
+
+
 
 ## 6. Reverse proxy (nginx + Let's Encrypt)
 
@@ -255,12 +276,14 @@ server {
 
 Tiga file lain: ganti `server_name` + `proxy_pass`:
 
-| File | `server_name` | `proxy_pass` |
-|---|---|---|
+
+| File                       | `server_name`              | `proxy_pass`            |
+| -------------------------- | -------------------------- | ----------------------- |
 | `healthfactor.ammlabs.fun` | `healthfactor.ammlabs.fun` | `http://127.0.0.1:9001` |
-| `rebalancing.ammlabs.fun` | `rebalancing.ammlabs.fun` | `http://127.0.0.1:9002` |
-| `gridtrading.ammlabs.fun` | `gridtrading.ammlabs.fun` | `http://127.0.0.1:9003` |
-| `yieldrouter.ammlabs.fun` | `yieldrouter.ammlabs.fun` | `http://127.0.0.1:9004` |
+| `rebalancing.ammlabs.fun`  | `rebalancing.ammlabs.fun`  | `http://127.0.0.1:9002` |
+| `gridtrading.ammlabs.fun`  | `gridtrading.ammlabs.fun`  | `http://127.0.0.1:9003` |
+| `yieldrouter.ammlabs.fun`  | `yieldrouter.ammlabs.fun`  | `http://127.0.0.1:9004` |
+
 
 Aktifkan + tes (pm2 agent boleh belum nyala; nginx tetap `ok` asalkan sintaks benar):
 
@@ -271,6 +294,8 @@ sudo ln -s /etc/nginx/sites-available/gridtrading.ammlabs.fun /etc/nginx/sites-e
 sudo ln -s /etc/nginx/sites-available/yieldrouter.ammlabs.fun /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 ```
+
+
 
 ### 6.2 SSL (certbot), sama seperti site biasa
 
@@ -301,6 +326,8 @@ Itu **wajar**. Yang dipakai nginx dan ERC-8004 adalah port unik 9001–9004. 900
 Yang **tidak** wajar: proses tidak log `serving on 127.0.0.1:9002` (dst.) — berarti `AGENT_PORT` bentrok atau env pm2 salah.
 
 ---
+
+
 
 ## 7. Proses: pm2
 
@@ -359,6 +386,8 @@ pm2 logs indexer
 pm2 restart all
 ```
 
+
+
 ### 7.1 Indexer — tutorial deploy (Postgres + Ponder + hire FE)
 
 Hire dari FE **tidak** nyimpan session di disk VPS. Alurnya:
@@ -406,11 +435,13 @@ Simpan di password manager. Kalau salah satu beda antar file, hire masuk DB tapi
 
 Tiga tempat yang **wajib sama**:
 
-| File | `INDEXER_SECRET` | `SESSION_KEY_ENCRYPTION_KEY` | `INDEXER_URL` |
-| --- | --- | --- | --- |
-| `apps/indexer/.env.local` | ya | ya | — (dia server-nya) |
-| empat `agents/<nama>/.studio/.env.local` | ya | ya | ecosystem set `http://127.0.0.1:42069` |
-| Mac / Vercel `apps/web/.env.local` | ya | **jangan** | `https://healthfactor.ammlabs.fun/indexer` |
+
+| File                                     | `INDEXER_SECRET` | `SESSION_KEY_ENCRYPTION_KEY` | `INDEXER_URL`                              |
+| ---------------------------------------- | ---------------- | ---------------------------- | ------------------------------------------ |
+| `apps/indexer/.env.local`                | ya               | ya                           | — (dia server-nya)                         |
+| empat `agents/<nama>/.studio/.env.local` | ya               | ya                           | ecosystem set `http://127.0.0.1:42069`     |
+| Mac / Vercel `apps/web/.env.local`       | ya               | **jangan**                   | `https://healthfactor.ammlabs.fun/indexer` |
+
 
 FE tidak butuh encryption key — dia kirim envelope, indexer yang mengunci.
 
@@ -442,6 +473,8 @@ Install package indexer (dari akar repo, karena workspace pnpm):
 cd /opt/am-m
 CI=true pnpm install --filter indexer
 ```
+
+
 
 #### D. Env empat agent
 
@@ -492,6 +525,8 @@ Tiga site agent lain **jangan** ditambah path ini.
 ```bash
 sudo nginx -t && sudo systemctl reload nginx
 ```
+
+
 
 #### F. Build + pm2 (lima app)
 
@@ -583,22 +618,29 @@ pm2 save
 curl -sS http://127.0.0.1:42069/v1/health
 ```
 
+
+
 #### J. Kalau rusak
 
-| Gejala | Cek |
-| --- | --- |
-| `Cannot find module .../sessionCrypto.js` | dist agent-strategy stale di `agents/*/node_modules`. `git pull`, build strategy, **`pnpm install` di tiap `agents/<nama>/app/agent`**, baru `pm2 delete all && pm2 start` |
-| `pm2 status` indexer `errored` | `pm2 logs indexer`; `.env.local` 600 ada; `pnpm install --filter indexer` |
+
+| Gejala                                         | Cek                                                                                                                                                                                                                 |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ECONNREFUSED 127.0.0.1:42069` di tick pertama | Race boot: agent tick sebelum Ponder listen. Indexer `Indexed block` = sudah hidup. Tick berikutnya (2 menit) harus idle, bukan error. `git pull` + rebuild strategy supaya fetch indexer di-catch.                 |
+| `Cannot find module .../sessionCrypto.js`      | dist agent-strategy stale di `agents/*/node_modules`. `git pull`, build strategy, `pnpm install` **di tiap** `agents/<nama>/app/agent`, baru `pm2 delete all && pm2 start`                                          |
+| `pm2 status` indexer `errored`                 | `pm2 logs indexer`; `.env.local` 600 ada; `pnpm install --filter indexer`                                                                                                                                           |
 | `Database schema required` / `DATABASE_SCHEMA` | `ponder start` tidak punya default schema. Isi `DATABASE_SCHEMA=ponder` di indexer `.env.local` (bukan `amm`), `git pull` (script sudah `--schema ponder`), lalu `pm2 delete all && pm2 start ecosystem.config.cjs` |
-| health loopback gagal | `docker compose ps`; `DATABASE_URL` |
-| HTTPS health 404/502, loopback OK | `location /indexer/` di **443**, trailing slash, `nginx -t` |
-| POST Bearer tetap 401 | `INDEXER_SECRET` FE ≠ indexer (spasi/newline) |
-| hire 500 di Next | `INDEXER_URL` xor `INDEXER_SECRET` di FE |
-| hire 502 di Next | indexer down / nginx |
-| agent `/strategy` idle setelah hire | encryption key beda; `AMM_DESK`; `pm2 env` `INDEXER_URL` |
-| Ponder sync dari genesis lama | set `PONDER_START_BLOCK_97` / `_56` di indexer `.env.local`, restart indexer |
+| health loopback gagal                          | `docker compose ps`; `DATABASE_URL`                                                                                                                                                                                 |
+| HTTPS health 404/502, loopback OK              | `location /indexer/` di **443**, trailing slash, `nginx -t`                                                                                                                                                         |
+| POST Bearer tetap 401                          | `INDEXER_SECRET` FE ≠ indexer (spasi/newline)                                                                                                                                                                       |
+| hire 500 di Next                               | `INDEXER_URL` **dan** `INDEXER_SECRET` di `apps/web/.env`, lalu restart Next. Tanpa URL, hire dulu 200 ke disk Mac — agent VPS tetap idle.                                                                          |
+| hire 502 di Next                               | Next sudah tembak VPS. `Cannot POST /indexer/v1/sessions` = request kena **agent** :9001, bukan Ponder. Sisipkan `location /indexer/` di server **443** healthfactor, *sebelum* `location /`, `proxy_pass http://127.0.0.1:42069/;` (trailing slash). Cek: `curl -sS https://healthfactor.ammlabs.fun/indexer/v1/health` → `{"ok":true}` |
+| agent `/strategy` idle setelah hire            | encryption key beda; `AMM_DESK`; `pm2 env` `INDEXER_URL`                                                                                                                                                            |
+| Ponder sync dari genesis lama                  | set `PONDER_START_BLOCK_97` / `_56` di indexer `.env.local`, restart indexer                                                                                                                                        |
+
 
 ---
+
+
 
 ## 8. Cek sebelum listing
 
@@ -615,6 +657,8 @@ Card: `url` HTTPS publik, skills `negotiate` + `notify_funded`, **tanpa** OAuth 
 `/strategy` idle tanpa session di indexer (atau `USER_SESSION_FILE` demo) itu wajar.
 
 ---
+
+
 
 ## 9. Listing ERC-8004 (setelah HTTPS hidup)
 
@@ -639,6 +683,8 @@ Ini **4 listing** on-chain. Varian agresif (jadi 8) = proyek + wallet + session 
 
 ---
 
+
+
 ## 10. Hire publik vs settle
 
 A2A `negotiate` ke URL HTTPS → `bag erc8183 buy` → `notify_funded` **segera** (deadline ~30 menit).
@@ -648,6 +694,8 @@ A2A `negotiate` ke URL HTTPS → `bag erc8183 buy` → `notify_funded` **segera*
 Storage `kind = local` di VPS **boleh**. IPFS hanya jika deliverable harus tahan ganti mesin.
 
 ---
+
+
 
 ## 11. Yang belum termasuk dokumen ini
 

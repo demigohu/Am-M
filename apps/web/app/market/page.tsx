@@ -1,10 +1,13 @@
-import { AppShell } from "../../components/layout/AppShell";
-import { MarketFloor } from "../../components/market/MarketFloor";
+import { Suspense } from "react";
+import { AppLayout } from "../../components/layout/AppLayout";
+import { MarketFloor, MarketFloorFallback } from "../../components/market/MarketFloor";
 
 export default function MarketPage() {
   return (
-    <AppShell>
-      <MarketFloor />
-    </AppShell>
+    <AppLayout>
+      <Suspense fallback={<MarketFloorFallback />}>
+        <MarketFloor />
+      </Suspense>
+    </AppLayout>
   );
 }

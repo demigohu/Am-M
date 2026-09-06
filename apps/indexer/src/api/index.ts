@@ -181,6 +181,12 @@ app.get("/v1/jobs/:id", async (c) => {
     .where(eq(schema.agentExecution.sessionId, row.id))
     .orderBy(desc(schema.agentExecution.blockNumber))
     .limit(50);
+  const snapshots = await db
+    .select()
+    .from(schema.positionSnapshot)
+    .where(eq(schema.positionSnapshot.sessionId, row.id))
+    .orderBy(desc(schema.positionSnapshot.takenAt))
+    .limit(20);
   const payments = await db
     .select()
     .from(schema.hirePayment)
@@ -199,6 +205,7 @@ app.get("/v1/jobs/:id", async (c) => {
       status: row.status,
       keys,
       executions,
+      snapshots,
       payments,
     }),
   );

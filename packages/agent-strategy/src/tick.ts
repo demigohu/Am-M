@@ -80,11 +80,17 @@ export function createTickLoop(opts: {
     status: () => state,
     start: () => {
       log.info(`interval ${intervalMs}ms variant=${riskProfile()}`);
-      void tick();
+      // Ponder binds :42069 a few seconds after pm2 start — don't race the first tick.
+      const first = setTimeout(() => {
+        void tick();
+      }, 5_000);
       const id = setInterval(() => {
         void tick();
       }, intervalMs);
-      return () => clearInterval(id);
+      return () => {
+        clearTimeout(first);
+        clearInterval(id);
+      };
     },
   };
 }

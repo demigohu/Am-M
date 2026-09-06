@@ -3,15 +3,17 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { Agent, Desk } from "../../lib/catalog";
+import { DESK_METRIC_COLUMNS, type DeskMetricColumn } from "../../lib/desks";
 import { SCAN_8004 } from "../../lib/altana/chain";
 import { formatU } from "../../lib/format";
 import { StatusPill } from "../ui/StatusPill";
 
-type SortKey = "name" | "pair" | "live" | "action" | "price" | "status";
+type SortKey = string;
 
 export function DeskAgentTable({ desk, agents }: { desk: Desk; agents: Agent[] }) {
+  const columns = DESK_METRIC_COLUMNS[desk.slug];
   const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({
-    key: "name",
+    key: columns[0]?.sortKey ?? columns[0]?.key ?? "name",
     dir: "asc",
   });
 
@@ -19,44 +21,48 @@ export function DeskAgentTable({ desk, agents }: { desk: Desk; agents: Agent[] }
     const copy = [...agents];
     copy.sort((a, b) => {
       const dir = sort.dir === "asc" ? 1 : -1;
-      switch (sort.key) {
-        case "price":
-          return (BigInt(a.priceWei) > BigInt(b.priceWei) ? 1 : -1) * dir;
-        case "pair":
-          return a.pair.localeCompare(b.pair) * dir;
-        case "live":
-          return a.liveMetric.localeCompare(b.liveMetric) * dir;
-        case "action":
-          return a.lastAction.localeCompare(b.lastAction) * dir;
-        case "status":
-          return a.status.localeCompare(b.status) * dir;
-        default:
-          return a.name.localeCompare(b.name) * dir;
+      if (sort.key === "price") {
+        return (BigInt(a.priceWei) > BigInt(b.priceWei) ? 1 : -1) * dir;
       }
+      if (sort.key === "name") {
+        return a.name.localeCompare(b.name) * dir;
+      }
+      const col = columns.find((c) => (c.sortKey ?? c.key) === sort.key);
+      if (col) {
+        return col.value(a).localeCompare(col.value(b)) * dir;
+      }
+      return 0;
     });
     return copy;
-  }, [agents, sort]);
+  }, [agents, columns, sort]);
 
-  function head(key: SortKey, label: string, extra = "") {
-    const active = sort.key === key;
+  function head(col: DeskMetricColumn) {
+    const sortable = col.sortKey ?? col.key;
+    const active = sort.key === sortable;
+    const align =
+      col.align === "right" ? "text-right" : col.align === "center" ? "text-center" : "";
     return (
-      <th className={`border-r border-ink/20 px-4 py-3.5 ${extra}`}>
-        <button
-          type="button"
-          onClick={() =>
-            setSort((prev) =>
-              prev.key === key
-                ? { key, dir: prev.dir === "asc" ? "desc" : "asc" }
-                : { key, dir: "asc" },
-            )
-          }
-          className={`font-mono text-[12px] tracking-wider uppercase ${
-            active ? "text-ink underline" : "hover:text-ink"
-          }`}
-        >
-          {label}
-          {active ? (sort.dir === "asc" ? " ↑" : " ↓") : ""}
-        </button>
+      <th key={col.key} className={`border-r border-ink/20 px-4 py-3.5 ${align}`}>
+        {col.sortKey ? (
+          <button
+            type="button"
+            onClick={() =>
+              setSort((prev) =>
+                prev.key === sortable
+                  ? { key: sortable, dir: prev.dir === "asc" ? "desc" : "asc" }
+                  : { key: sortable, dir: "asc" },
+              )
+            }
+            className={`font-mono text-[12px] tracking-wider uppercase ${
+              active ? "text-ink underline" : "hover:text-ink"
+            }`}
+          >
+            {col.label}
+            {active ? (sort.dir === "asc" ? " ↑" : " ↓") : ""}
+          </button>
+        ) : (
+          <span className="font-mono text-[12px] tracking-wider uppercase">{col.label}</span>
+        )}
       </th>
     );
   }
@@ -66,13 +72,47 @@ export function DeskAgentTable({ desk, agents }: { desk: Desk; agents: Agent[] }
       <div className="overflow-x-auto">
         <table className="w-full min-w-[980px] border-collapse text-left">
           <thead>
-            <tr className="border-b border-ink bg-oat">
-              {head("name", "Agent")}
-              {head("pair", "Target")}
-              {head("live", "/strategy", "text-right")}
-              {head("action", "Last action")}
-              {head("price", "Fee", "text-right")}
-              {head("status", "Status")}
+            <tr className="border-b border-ink bg-oat/30">
+              <th className="border-r border-ink/20 px-4 py-3.5">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSort((prev) =>
+                      prev.key === "name"
+                        ? { key: "name", dir: prev.dir === "asc" ? "desc" : "asc" }
+                        : { key: "name", dir: "asc" },
+                    )
+                  }
+                  className={`font-mono text-[12px] tracking-wider uppercase ${
+                    sort.key === "name" ? "text-ink underline" : "hover:text-ink"
+                  }`}
+                >
+                  Agent
+                  {sort.key === "name" ? (sort.dir === "asc" ? " ↑" : " ↓") : ""}
+                </button>
+              </th>
+              {columns.map((col) => head(col))}
+              <th className="border-r border-ink/20 px-4 py-3.5 text-right">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSort((prev) =>
+                      prev.key === "price"
+                        ? { key: "price", dir: prev.dir === "asc" ? "desc" : "asc" }
+                        : { key: "price", dir: "asc" },
+                    )
+                  }
+                  className={`font-mono text-[12px] tracking-wider uppercase ${
+                    sort.key === "price" ? "text-ink underline" : "hover:text-ink"
+                  }`}
+                >
+                  Fee
+                  {sort.key === "price" ? (sort.dir === "asc" ? " ↑" : " ↓") : ""}
+                </button>
+              </th>
+              <th className="border-r border-ink/20 px-4 py-3.5">
+                <span className="font-mono text-[12px] tracking-wider uppercase">Status</span>
+              </th>
               <th className="px-4 py-3.5 text-center font-mono text-[12px] tracking-wider uppercase">
                 Action
               </th>
@@ -80,7 +120,7 @@ export function DeskAgentTable({ desk, agents }: { desk: Desk; agents: Agent[] }
           </thead>
           <tbody className="divide-y divide-ink">
             {rows.map((agent) => (
-              <tr key={agent.id} className="hover:bg-surface">
+              <tr key={agent.id} className="hover:bg-buttercream/30">
                 <td className="border-r border-ink/10 px-4 py-4">
                   <div className="flex items-center gap-2.5">
                     <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${desk.color}`} />
@@ -97,16 +137,19 @@ export function DeskAgentTable({ desk, agents }: { desk: Desk; agents: Agent[] }
                     </div>
                   </div>
                 </td>
-                <td className="border-r border-ink/10 px-4 py-4 font-mono">{agent.pair}</td>
-                <td className="border-r border-ink/10 px-4 py-4 text-right font-mono font-bold">
-                  {agent.liveMetric}
-                </td>
-                <td className="border-r border-ink/10 px-4 py-4 font-mono text-[13px]">
-                  {agent.lastAction}
-                </td>
+                {columns.map((col) => (
+                  <td
+                    key={col.key}
+                    className={`border-r border-ink/10 px-4 py-4 font-mono ${
+                      col.align === "right" ? "text-right font-bold" : "text-[13px]"
+                    }`}
+                  >
+                    {col.value(agent)}
+                  </td>
+                ))}
                 <td className="border-r border-ink/10 px-4 py-4 text-right font-mono font-bold">
                   {formatU(agent.priceWei)} $U{" "}
-                  <span className="text-[13px] font-normal text-[#7e775f]">/ job</span>
+                  <span className="text-[13px] font-normal text-char">/ job</span>
                 </td>
                 <td className="border-r border-ink/10 px-4 py-4">
                   <StatusPill label={agent.status} tone={agent.statusTone} />

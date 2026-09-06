@@ -5,10 +5,12 @@ import {
   ingestConfigured,
   ingestMisconfigured,
   ingestPut,
+  ingestStatus,
 } from "../../../lib/altana/ingest";
 import { ID_RE, isDeskSlug, sessionFile, sessionsRoot } from "../../../lib/altana/sessionFiles";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   let body: {
@@ -50,19 +52,25 @@ export async function POST(req: Request) {
     grantTx: body.grantTx,
   };
 
-  if (ingestMisconfigured()) {
+  if (!ingestConfigured() || ingestMisconfigured()) {
+    const status = ingestStatus();
+    console.warn(
+      `[sessions] indexer env missing hasUrl=${status.hasUrl} hasSecret=${status.hasSecret}`,
+    );
     return NextResponse.json(
-      { error: "INDEXER_URL and INDEXER_SECRET must both be set" },
+      {
+        error: "INDEXER_URL and INDEXER_SECRET must both be set in apps/web/.env (restart Next)",
+        hasUrl: status.hasUrl,
+        hasSecret: status.hasSecret,
+      },
       { status: 500 },
     );
   }
-  if (ingestConfigured()) {
-    try {
-      await ingestPut(payload);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "VPS ingest failed";
-      return NextResponse.json({ error: message }, { status: 502 });
-    }
+  try {
+    await ingestPut(payload);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "VPS ingest failed";
+    return NextResponse.json({ error: message }, { status: 502 });
   }
 
   const file = sessionFile(body.id, body.desk);
