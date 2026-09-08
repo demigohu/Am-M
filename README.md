@@ -2,8 +2,7 @@
 
 **Hire a DeFi agent. You keep the keys.**
 
-DeFi agent marketplace on **BNB Chain Testnet** — users hire agents via Altana passkey, grant sessions with allowlist + spend cap, and agents execute on-chain strategy inside the user vault. Grant transactions and agent deliverables are indexed separately as job tickets.
-
+BNB Chain testnet marketplace for four DeFi job desks — hire with Altana passkey sessions (allowlist + spend cap), agents execute inside your vault, and job tickets index grant txs separately from on-chain strategy deliverables.
 | | |
 |---|---|
 | **Hackathon** | [The Smart Money Era](https://www.bnbchain.org/en/hackathons/smart-money-era) |
@@ -179,6 +178,10 @@ Full details: [`docs/RUNNING.md`](docs/RUNNING.md).
 ---
 
 ## Production deploy
+
+| Surface | URL |
+|---------|-----|
+| **Marketplace (frontend)** | https://www.ammlabs.fun/ |
 
 Eight agent subdomains + one indexer behind nginx:
 
