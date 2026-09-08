@@ -19,7 +19,7 @@ import {
   readPool,
   tokenBalances,
 } from "./pancake.js";
-import { fetchCorePoolMarkets } from "./venus-api.js";
+import { fetchCorePoolMarkets, filterYieldSessionMarkets } from "./venus-api.js";
 import {
   encodeVenusNativeSwapAndSupply,
   encodeVenusSwapAndSupply,
@@ -683,7 +683,7 @@ export async function runYieldTick(opts: {
   const sessionPolicy = await summarizeSessionPolicy(opts.session);
   let ranked;
   try {
-    ranked = await fetchCorePoolMarkets();
+    ranked = filterYieldSessionMarkets(await fetchCorePoolMarkets());
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     return finish(

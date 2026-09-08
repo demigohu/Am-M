@@ -1,4 +1,5 @@
 import { COMPTROLLER, type Address } from "./addresses.js";
+import { isYieldSessionVToken } from "./core-pool-vtokens.js";
 
 const VENUS_API_URL =
   process.env.VENUS_API_URL?.trim() ?? "https://testnetapi.venus.io";
@@ -73,4 +74,11 @@ export async function fetchCorePoolMarkets(): Promise<CorePoolMarketQuote[]> {
   markets.sort((a, b) => b.supplyApy - a.supplyApy);
   cache = { at: Date.now(), markets };
   return markets;
+}
+
+/** Markets the hired session is allowed to mint/redeem (matches grant allowlist). */
+export function filterYieldSessionMarkets(
+  markets: CorePoolMarketQuote[],
+): CorePoolMarketQuote[] {
+  return markets.filter((m) => isYieldSessionVToken(m.vToken));
 }

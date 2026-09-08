@@ -12,7 +12,7 @@ import {
   VUSDT,
   WBNB,
 } from "./addresses.js";
-import { CORE_POOL_VTOKENS } from "./core-pool-vtokens.js";
+import { YIELD_SESSION_VTOKENS } from "./core-pool-vtokens.js";
 
 import {
   DEFAULT_NATIVE_SPEND_CAP,
@@ -48,7 +48,7 @@ function corePoolVenusCalls() {
     { to: VENUS_SWAP_ROUTER, signature: SIG.venusSwapExactTokensForBNBAndSupply },
     { to: VENUS_SWAP_ROUTER, signature: SIG.venusSwapExactETHForTokensAndSupply },
   ];
-  for (const vToken of CORE_POOL_VTOKENS) {
+  for (const vToken of YIELD_SESSION_VTOKENS) {
     calls.push({ to: vToken, signature: SIG.venusMint });
     if (vToken.toLowerCase() === VBNB.toLowerCase()) {
       calls.push({ to: vToken, signature: SIG.venusMintBnb });
@@ -121,7 +121,8 @@ export function rebalanceSessionPermissions(
 }
 
 /**
- * Yield session — Venus Core Pool mint/redeem + Venus SwapRouter rotate.
+ * Yield session — vUSDT/vUSDC/vBNB mint/redeem + Venus SwapRouter rotate.
+ * (Full Core Pool allowlist exceeds Altana testnet relay limits on grantSession.)
  */
 export function yieldSessionPermissions(
   opts?: SessionBudgetOpts | bigint,

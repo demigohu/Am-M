@@ -1,3 +1,22 @@
+import { VBNB, VUSDC, VUSDT } from "./addresses.js";
+
+/**
+ * vTokens included in yield session grants (FE hire + agent strategy).
+ * Full Core Pool list (~46) makes Altana testnet relay UserOps too large (~18M gas) and
+ * grantSession stays PENDING forever. Keep this set small; agent only ranks these markets.
+ */
+export const YIELD_SESSION_VTOKENS = [VUSDT, VUSDC, VBNB] as const;
+
+export type YieldSessionVToken = (typeof YIELD_SESSION_VTOKENS)[number];
+
+const YIELD_SESSION_VTOKEN_SET = new Set(
+  YIELD_SESSION_VTOKENS.map((a) => a.toLowerCase()),
+);
+
+export function isYieldSessionVToken(vToken: string): boolean {
+  return YIELD_SESSION_VTOKEN_SET.has(vToken.toLowerCase());
+}
+
 /** Venus Core Pool vToken addresses (BSC testnet 97) — synced from testnetapi.venus.io. */
 export const CORE_POOL_VTOKENS = [
   "0x05B2EC5B7437FB188175bf440e3EB36af79fe319",
