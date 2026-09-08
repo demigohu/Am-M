@@ -7,7 +7,7 @@ import {
   positionSnapshot,
   registryAgent,
 } from "ponder:schema";
-import { keccak256, parseAbiItem, type Hex } from "viem";
+import { keccak256, type Hex } from "viem";
 import { erc20Abi, keyStoreAbi, pcsPoolAbi, vTokenAbi } from "../abis/amm";
 import {
   FIRST_PARTY_8004,
@@ -15,14 +15,12 @@ import {
   MAINNET,
   SELLER_SET,
   TOKEN_U,
-  USDC,
-  USDT,
   VBNB,
   VUSDC,
   VUSDT,
-  WBNB,
 } from "./addresses";
 import { fetchDeskDeliverable } from "./deliverable";
+import { scanStrategyExecutions } from "./execution-scan";
 import { pollErc8183Job } from "./erc8183";
 import { gasSpentForTxs } from "./gas";
 import {
@@ -34,14 +32,7 @@ import {
   upsertSessionDeliverable,
   setSessionGas,
 } from "./offchain";
-import { testnetPublicClient } from "./rpc";
-import { scanWalletTransactions } from "./scan";
 
-const transferEvent = parseAbiItem(
-  "event Transfer(address indexed from, address indexed to, uint256 value)",
-);
-
-const TRACKED = [TOKEN_U, USDT, USDC, WBNB] as `0x${string}`[];
 const BLOCKS_PER_YEAR = 10_512_000n;
 
 ponder.on("United:Transfer", async ({ event, context }) => {
@@ -73,10 +64,9 @@ ponder.on("Tick:block", async ({ event, context }) => {
 
   const now = event.block.timestamp;
   const defaultLookback = event.block.number > 5000n ? event.block.number - 5000n : 0n;
-  const LOG_CHUNK = 2000n;
-const BLOCKS_PER_TICK = BigInt(
-  Math.max(20, Number(process.env.INDEXER_BLOCKS_PER_TICK ?? "200") || 200),
-);
+  const BLOCKS_PER_TICK = BigInt(
+    Math.max(20, Number(process.env.INDEXER_BLOCKS_PER_TICK ?? "200") || 200),
+  );
 
   for (const session of sessions) {
     const wallet = session.wallet as Hex;
@@ -169,65 +159,29 @@ const BLOCKS_PER_TICK = BigInt(
           scanFrom + BLOCKS_PER_TICK > event.block.number
             ? event.block.number
             : scanFrom + BLOCKS_PER_TICK - 1n;
+
+        const excludeTx = new Set<string>();
+        if (session.grantTx) excludeTx.add(session.grantTx.toLowerCase());
+
+        const scanned = await scanStrategyExecutions(wallet, scanFrom, scanTo, {
+          excludeTxHashes: excludeTx,
+        });
         const txHashes: Hex[] = [];
-
-        let chunkStart = scanFrom;
-        while (chunkStart <= scanTo) {
-          const chunkEnd =
-            chunkStart + LOG_CHUNK > scanTo ? scanTo : chunkStart + LOG_CHUNK;
-          const logOpts = {
-            address: TRACKED,
-            event: transferEvent,
-            fromBlock: chunkStart,
-            toBlock: chunkEnd,
-          };
-          const [logsFrom, logsTo] = await Promise.all([
-            testnetPublicClient.getLogs({ ...logOpts, args: { from: wallet } }),
-            testnetPublicClient.getLogs({ ...logOpts, args: { to: wallet } }),
-          ]);
-          const seen = new Set<string>();
-          for (const log of [...logsFrom, ...logsTo]) {
-            const dedupe = `${log.transactionHash}-${log.logIndex}`;
-            if (seen.has(dedupe)) continue;
-            seen.add(dedupe);
-            txHashes.push(log.transactionHash);
-            const from = log.args.from?.toLowerCase();
-            const to = log.args.to?.toLowerCase();
-            const target = (to ?? from ?? wallet) as Hex;
-            const verified = to === wallet.toLowerCase();
-            await context.db
-              .insert(agentExecution)
-              .values({
-                id: `${session.id}-${log.transactionHash}-${log.logIndex}`,
-                sessionId: session.id,
-                wallet,
-                txHash: log.transactionHash,
-                target,
-                value: log.args.value ?? 0n,
-                recipientsVerified: verified,
-                timestamp: now,
-                blockNumber: log.blockNumber,
-              })
-              .onConflictDoNothing();
-          }
-          chunkStart = chunkEnd + 1n;
-        }
-
-        const walletTxs = await scanWalletTransactions(wallet, scanFrom, scanTo);
-        for (const tx of walletTxs) {
-          txHashes.push(tx.txHash);
+        for (const row of scanned) {
+          txHashes.push(row.txHash);
+          const logKey = row.logIndex >= 0 ? row.logIndex : "call";
           await context.db
             .insert(agentExecution)
             .values({
-              id: `${session.id}-${tx.txHash}-call`,
+              id: `${session.id}-${row.txHash}-${logKey}`,
               sessionId: session.id,
               wallet,
-              txHash: tx.txHash,
-              target: (tx.to ?? wallet) as Hex,
-              value: 0n,
-              recipientsVerified: true,
+              txHash: row.txHash,
+              target: row.target,
+              value: row.value,
+              recipientsVerified: row.recipientsVerified,
               timestamp: now,
-              blockNumber: tx.blockNumber,
+              blockNumber: row.blockNumber,
             })
             .onConflictDoNothing();
         }

@@ -527,7 +527,19 @@ pm2 delete all && pm2 start ecosystem.config.cjs && pm2 save
 | `ECONNREFUSED 42069` | indexer belum listen; `pm2 logs indexer` |
 | hire 502 / `Cannot POST /indexer/` | nginx `location /indexer/` di **443** healthfactor |
 | agent idle setelah hire | `AMM_DESK`, `AMM_AGENT_ID`, encryption key |
+| job page **0 strategy txs** padahal agent jalan | indexer lama / cursor lewat block tx → **§7.1 backfill** |
 | RPC `History has been pruned` | ganti RPC archive atau naikkan start block |
+
+**Backfill execution log** (setelah upgrade indexer scanner): reset cursor scan per session supaya tx lama di-index ulang dari block grant:
+
+```bash
+psql "$DATABASE_URL" -c "DELETE FROM amm.session_scan WHERE session_id = 's-XXXXXXXX';"
+# atau semua session aktif:
+psql "$DATABASE_URL" -c "DELETE FROM amm.session_scan;"
+pm2 restart indexer
+```
+
+Tx **grant** (`grantTx`) sengaja tidak masuk strategy tx count.
 
 ---
 

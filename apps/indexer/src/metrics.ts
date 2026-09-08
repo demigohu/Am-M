@@ -23,8 +23,8 @@ export type SessionMetrics = {
 function formatUnderlying(raw: bigint, decimals: number): string | null {
   if (raw === 0n) return null;
   const n = Number(raw) / 10 ** decimals;
-  if (!Number.isFinite(n) || n < 0.0001) return null;
-  return n.toLocaleString(undefined, { maximumFractionDigits: 4 });
+  if (!Number.isFinite(n) || n < 1e-8) return null;
+  return n.toLocaleString(undefined, { maximumFractionDigits: 6 });
 }
 
 export function snapshotSummary(snapshots: SnapshotRow[]): string | null {

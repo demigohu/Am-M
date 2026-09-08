@@ -8,6 +8,35 @@ export const VUSDT = "0xb7526572FFE56AB9D7489838Bf2E18e3323b441A" as const;
 export const VUSDC = "0xD5C4C2e2facBEB59D0216D0595d63FcDc6F9A1a7" as const;
 export const VBNB = "0x2E7222e51c0f6e98610A1543Aa3836E092CDe62c" as const;
 
+/** Venus + Pancake contracts agents call (BSC testnet 97). */
+export const COMPTROLLER = "0x94d1820b2D1c7c7452A163983Dc888CEC546b77D" as const;
+export const VENUS_SWAP_ROUTER = "0xd3F226acA3210990DBA3f410b74E36b08F31FCf2" as const;
+export const PCS_NFPM = "0x427bF5b37357632377eCbEC9de3626C71A5396c1" as const;
+export const PCS_SWAP_ROUTER = "0x1b81D678ffb9C0263b24A97847620C99d213eB14" as const;
+/** Altana Orchestrator — every session execute emits logs referencing the vault wallet. */
+export const ALTANA_ORCHESTRATOR =
+  "0xcb5cef3c54aa90e9a7ad602a258d3d360cc862b9" as const;
+
+/** ERC-20 + vToken Transfer scan (underlying + Venus receipts). */
+export const TRANSFER_SCAN_TOKENS = [
+  TOKEN_U,
+  USDT,
+  USDC,
+  WBNB,
+  VUSDT,
+  VUSDC,
+  VBNB,
+] as const;
+
+/** Any log mentioning the wallet on these contracts counts as strategy work. */
+export const WALLET_TOPIC_CONTRACTS = [
+  ALTANA_ORCHESTRATOR,
+  COMPTROLLER,
+  VENUS_SWAP_ROUTER,
+  PCS_NFPM,
+  PCS_SWAP_ROUTER,
+] as const;
+
 export const SELLERS: Record<string, `0x${string}`> = {
   guard: "0xDF977e03657B96C43663c28430274031266072b4",
   rebalance: "0x7f3FA089a0D2F0c48d7EcacF843a03D69793C878",

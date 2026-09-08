@@ -49,18 +49,14 @@ type IndexerJob = {
   } | null;
 };
 
-function formatUnderlying(raw: string | undefined): string | null {
+function formatUnderlying(raw: string | undefined, decimals = 18): string | null {
   if (!raw || raw === "0") return null;
   try {
     const v = BigInt(raw);
     if (v === 0n) return null;
-    for (const decimals of [18, 6]) {
-      const n = Number(v) / 10 ** decimals;
-      if (Number.isFinite(n) && n >= 0.0001) {
-        return n.toLocaleString(undefined, { maximumFractionDigits: 4 });
-      }
-    }
-    return null;
+    const n = Number(v) / 10 ** decimals;
+    if (!Number.isFinite(n) || n < 1e-8) return null;
+    return n.toLocaleString(undefined, { maximumFractionDigits: 6 });
   } catch {
     return null;
   }
@@ -69,9 +65,9 @@ function formatUnderlying(raw: string | undefined): string | null {
 function snapshotSummary(snapshots: IndexerJob["snapshots"]): string | null {
   const latest = snapshots[0];
   if (!latest) return null;
-  const usdt = formatUnderlying(latest.vUsdtUnderlying);
-  const usdc = formatUnderlying(latest.vUsdcUnderlying);
-  const bnb = formatUnderlying(latest.vBnbUnderlying);
+  const usdt = formatUnderlying(latest.vUsdtUnderlying, 18);
+  const usdc = formatUnderlying(latest.vUsdcUnderlying, 18);
+  const bnb = formatUnderlying(latest.vBnbUnderlying, 18);
   const parts: string[] = [];
   if (usdt) parts.push(`${usdt} USDT in Venus`);
   if (usdc) parts.push(`${usdc} USDC in Venus`);
