@@ -2,7 +2,6 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Icon } from "../ui/Icon";
 import {
   DEFAULT_MARKET_FILTERS,
   MarketControls,
@@ -213,48 +212,6 @@ export function MarketFloor() {
           </div>
           <div className="font-mono text-[11px] tracking-wider text-char uppercase">
             GET /strategy on each seller
-          </div>
-        </div>
-
-        <div className="mt-2 w-full rounded-[20px] border border-ink bg-oat p-6 md:p-8">
-          <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
-            <div className="flex max-w-2xl flex-col gap-2">
-              <div className="flex items-center gap-2">
-                <span className="inline-block rounded-full border border-ink bg-bone px-2.5 py-0.5 font-mono text-[11px] font-bold tracking-wider">
-                  ERC-8004 REGISTRY
-                </span>
-                <span className="font-mono text-[11px] font-medium text-ink/80">
-                  Identity directory · not hireable
-                </span>
-              </div>
-              <h2 className="mt-1 font-display text-xl font-bold">
-                Cryptographic Provenance &amp; Agent Attestation
-              </h2>
-              <p className="text-[15px] text-ink/85">
-                First-party sellers only. ERC-8004 ids 2056–2059 are proof of identity, not a
-                prerequisite to pick a job.
-                {indexer?.agents.length ? (
-                  <>
-                    {" "}
-                    Registry synced:{" "}
-                    {indexer.agents
-                      .filter((a) => a.hireable)
-                      .map((a) => a.name ?? `#${a.tokenId}`)
-                      .join(" · ")}
-                    .
-                  </>
-                ) : null}
-              </p>
-            </div>
-            <a
-              href="https://8004scan.io"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex shrink-0 items-center gap-2 rounded-full border border-ink bg-bone px-5 py-3 text-sm font-bold transition-colors hover:bg-buttercream"
-            >
-              <span>Inspect raw agent registry on 8004scan</span>
-              <Icon name="arrow_outward" />
-            </a>
           </div>
         </div>
       </div>

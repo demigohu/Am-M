@@ -27,8 +27,8 @@ export function HomeView() {
     <div className="flex w-full flex-col bg-buttercream text-ink">
       {/* Hero */}
       <section className="w-full border-b border-ink bg-buttercream px-6 pt-12 pb-16 md:pt-20">
-        <div className="mx-auto flex min-h-[520px] max-w-[1200px] flex-col justify-between">
-          <div className="flex max-w-[840px] flex-col items-start pt-10 md:pt-16">
+        <div className="mx-auto max-w-[1200px]">
+          <div className="flex max-w-[840px] flex-col items-start pt-10 pb-4 md:pt-16">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-ink bg-bone px-3 py-1 font-mono text-[12px] font-medium tracking-wide">
               <span className="h-2 w-2 rounded-full border border-ink bg-status-green" />
               <span>Live (testnet)</span>
@@ -48,25 +48,7 @@ export function HomeView() {
               >
                 Launch app
               </Link>
-              <Link
-                href="/report"
-                className="inline-flex items-center justify-center rounded-full border-[1.5px] border-ink bg-bone px-8 py-3.5 text-[15px] font-medium transition-colors hover:bg-buttercream"
-              >
-                Read the Advantage
-              </Link>
             </div>
-          </div>
-          <div className="flex w-full justify-center pt-16">
-            <a
-              href="#advantage"
-              aria-label="Scroll to details"
-              className="flex flex-col items-center gap-1.5 text-ink opacity-80 transition-opacity hover:opacity-100"
-            >
-              <span className="font-mono text-[10px] tracking-widest uppercase">How it works</span>
-              <svg className="h-5 w-5 fill-none stroke-ink stroke-2" viewBox="0 0 24 24">
-                <path d="M19 9l-7 7-7-7" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </a>
           </div>
         </div>
       </section>

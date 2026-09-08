@@ -23,10 +23,11 @@ import { altanaClient, errorMessage } from "../../lib/altana/client";
 import { postSessionFile, patch8183Job } from "../../lib/altana/persist";
 import { sleep, withNonceRetry } from "../../lib/altana/retry";
 import { serializeSessionEnvelope } from "../../lib/altana/sessionEnvelope";
-import { getStoredWallet, upsertHire } from "../../lib/altana/storage";
+import { getStoredAddress, getStoredWallet, upsertHire } from "../../lib/altana/storage";
 import { openWallet } from "../../lib/altana/wallet";
 import { type Agent, type Desk } from "../../lib/catalog";
 import { formatU } from "../../lib/format";
+import { HireFlowSteps, type HirePhase, type ProtocolSetup } from "./HireFlowSteps";
 
 export function HirePanel({
   agent,
@@ -41,13 +42,44 @@ export function HirePanel({
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
-  const [step, setStep] = useState<string | null>(null);
+  const [phase, setPhase] = useState<HirePhase>("idle");
+  const [liveDetail, setLiveDetail] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hasWallet, setHasWallet] = useState(false);
+  const [protocolSetup, setProtocolSetup] = useState<ProtocolSetup>("unknown");
 
   useEffect(() => {
     setHasWallet(Boolean(getStoredWallet()));
   }, []);
+
+  useEffect(() => {
+    const address = getStoredAddress();
+    if (!address) {
+      setProtocolSetup("unknown");
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const adminCalls = await adminCallsForDesk(agent.desk, address);
+        if (!cancelled) {
+          setProtocolSetup(adminCalls.length > 0 ? "needed" : "ready");
+        }
+      } catch {
+        if (!cancelled) setProtocolSetup("unknown");
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [agent.desk, hasWallet]);
+
+  function setProgress(nextPhase: HirePhase, detail: string) {
+    setPhase(nextPhase);
+    setLiveDetail(detail);
+  }
 
   async function onGrant() {
     if (!getStoredWallet()) {
@@ -57,7 +89,7 @@ export function HirePanel({
     setBusy(true);
     setError(null);
     try {
-      setStep("Unlocking passkey…");
+      setProgress("unlock", "Unlocking passkey…");
       const opened = await openWallet();
       const vault = await readVault(opened.address);
       if (!vault.funded) {
@@ -68,7 +100,8 @@ export function HirePanel({
       const client = altanaClient();
       const adminCalls = await adminCallsForDesk(agent.desk, opened.address);
       if (adminCalls.length > 0) {
-        setStep("Approve protocol (passkey)…");
+        setProtocolSetup("needed");
+        setProgress("approve", "Approve protocol (passkey)…");
         const approved = await client.execute({
           wallet: opened.wallet,
           signer: opened.signer,
@@ -78,8 +111,11 @@ export function HirePanel({
         if (approved.status === "FAILED") {
           throw new Error("Protocol approve failed. Check the vault on BscScan, then retry.");
         }
-        setStep("Waiting for Keystore nonce…");
+        setProtocolSetup("ready");
+        setProgress("approve_wait", "Waiting for Keystore nonce…");
         await sleep(5_000);
+      } else {
+        setProtocolSetup("ready");
       }
 
       const sessionKey = generatePrivateKey();
@@ -92,7 +128,7 @@ export function HirePanel({
         sessionBudgetToGrantOpts(sessionBudget),
       );
 
-      setStep("Grant session (passkey)…");
+      setProgress("grant", "Grant session (passkey)…");
       const granted = await withNonceRetry(() =>
         client.grantSession({
           wallet: opened.wallet,
@@ -126,7 +162,7 @@ export function HirePanel({
       };
       upsertHire(hire);
 
-      setStep("Handing session to agent…");
+      setProgress("handoff", "Handing session to agent…");
       try {
         await postSessionFile({
           id,
@@ -145,7 +181,7 @@ export function HirePanel({
       }
 
       if (vault.u > 0n) {
-        setStep("Paying ERC-8183 retainer…");
+        setProgress("retainer", "Paying ERC-8183 retainer…");
         try {
           const paid = await hireErc8183Agent(
             opened.wallet,
@@ -170,45 +206,39 @@ export function HirePanel({
       router.push(`/jobs/${id}`);
     } catch (err) {
       setError(errorMessage(err));
+      setPhase("idle");
+      setLiveDetail(null);
     } finally {
       setBusy(false);
-      setStep(null);
     }
   }
+
+  const buttonLabel = busy
+    ? liveDetail ?? "Working…"
+    : `Grant session & pay ${formatU(agent.priceWei)} $U`;
+
+  const flowSteps = (
+    <HireFlowSteps
+      phase={phase}
+      protocolSetup={protocolSetup}
+      protocolLabel={desk.protocol}
+      liveDetail={liveDetail}
+      compact={variant !== "checkout"}
+    />
+  );
 
   if (variant === "checkout") {
     return (
       <>
-        <div className="mb-5 space-y-3">
-          <div className="flex items-center gap-3 rounded-lg border border-ink bg-[#f7eeca] p-2.5">
-            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-ink bg-status-green text-bone">
-              <Icon name="check" className="text-sm" />
-            </div>
-            <div>
-              <div className="text-sm font-bold">Step 1: Protocol approved</div>
-              <div className="truncate font-mono text-[11px] text-status-green">
-                {desk.protocol} allowlisted
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 rounded-lg border-2 border-ink bg-bone p-2.5">
-            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-ink bg-marigold font-mono text-[11px] font-bold">
-              2
-            </div>
-            <div>
-              <div className="text-sm font-bold">Step 2: Sign session delegation</div>
-              <div className="font-mono text-[11px]">Awaiting Passkey WebAuthn prompt</div>
-            </div>
-          </div>
-        </div>
+        {flowSteps}
         <button
           type="button"
           disabled={busy}
           onClick={() => void onGrant()}
           className="flex w-full items-center justify-center gap-2 rounded-full border-2 border-ink bg-marigold py-4 text-[15px] font-bold transition-all hover:bg-marigold-dim active:translate-y-px disabled:opacity-60"
         >
-          <Icon name="fingerprint" />
-          {busy ? step ?? "Working…" : `Grant session & pay ${formatU(agent.priceWei)} $U`}
+          <Icon name={busy ? "hourglass_empty" : "fingerprint"} />
+          {buttonLabel}
         </button>
         {error ? (
           <p className="mt-3 rounded-xl border border-ink bg-buttercream p-3 text-[13px] text-status-red">
@@ -240,34 +270,15 @@ export function HirePanel({
 
   return (
     <>
-      <ol className="mb-6 space-y-3 text-sm">
-        <li className="flex gap-3">
-          <Icon name="check" className="text-status-green" />
-          <span>
-            <strong>Step 1: Approve protocol (once)</strong>
-            <span className="block text-char">
-              {desk.name} tokens are approved on the admin path before the session grant.
-            </span>
-          </span>
-        </li>
-        <li className="flex gap-3">
-          <span className="flex h-5 w-5 items-center justify-center rounded-full border border-ink text-xs font-bold">
-            2
-          </span>
-          <span>
-            <strong>Step 2: Grant session</strong>
-            <span className="block text-char">Passkey signs the Keystore grant (allowlist, cap, expiry).</span>
-          </span>
-        </li>
-      </ol>
+      {flowSteps}
       <button
         type="button"
         disabled={busy}
         onClick={() => void onGrant()}
         className="mb-3 flex w-full items-center justify-center gap-2 rounded-full border-2 border-ink bg-marigold px-5 py-3 text-sm font-bold hover:bg-marigold-dim disabled:opacity-60"
       >
-        <Icon name="fingerprint" />
-        {busy ? step ?? "Working…" : `Grant session & pay ${formatU(agent.priceWei)} $U`}
+        <Icon name={busy ? "hourglass_empty" : "fingerprint"} />
+        {buttonLabel}
       </button>
       {error ? (
         <p className="mb-3 rounded-xl border border-ink bg-buttercream p-3 text-[13px] text-status-red">

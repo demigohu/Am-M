@@ -1,167 +1,280 @@
 # Am-M
 
-Marketplace hire agent DeFi di BNB Chain. PRD: [`docs/PRD.md`](docs/PRD.md). **Cara nyalain agent:** [`docs/RUNNING.md`](docs/RUNNING.md).
+**Hire a DeFi agent. You keep the keys.**
 
-Starter Turbo di bawah ini adalah sisa scaffold `apps/web` / `apps/docs`. Agent **tidak** dijalankan dari akar repo.
+DeFi agent marketplace on **BNB Chain Testnet** — users hire agents via Altana passkey, grant sessions with allowlist + spend cap, and agents execute on-chain strategy inside the user vault. Grant transactions and agent deliverables are indexed separately as job tickets.
+
+| | |
+|---|---|
+| **Hackathon** | [The Smart Money Era](https://www.bnbchain.org/en/hackathons/smart-money-era) |
+| **Chain** | BSC Testnet (97) — execution; BSC Mainnet (56) — APR/tick context only |
+| **PRD** | [`docs/PRD.md`](docs/PRD.md) |
+| **Run locally** | [`docs/RUNNING.md`](docs/RUNNING.md) |
+| **VPS deploy** | [`docs/DEPLOY.md`](docs/DEPLOY.md) |
 
 ---
 
-# Turborepo starter
+## What this is
 
-This Turborepo starter is maintained by the Turborepo core team.
+Am-M is not an ERC-8004 directory — it is a **job desk** with four DeFi desks:
 
-## Using this example
+| Desk | Agent (conservative) | Agent (aggressive) | Protocol |
+|------|----------------------|--------------------|----------|
+| **Guard** | `healthfactor` | `healthfactoragg` | Venus — repay/mint when HF is low |
+| **Rebalance** | `rebalancing` | `rebalancingagg` | PancakeSwap V3 NFPM — LP WBNB/USDT fee-100 |
+| **Grid** | `gridtrading` | `gridtradingagg` | PancakeSwap V3 SwapRouter — synthetic grid |
+| **Yield** | `yieldrouter` | `yieldrouteragg` | Venus Core Pool — mint/rotate vToken |
 
-Run the following command:
+Eight sellers = 4 desks × 2 risk profiles. One strategy codebase (`packages/agent-strategy`), different parameters via `AGENT_VARIANT`.
 
-```sh
-npx create-turbo@latest
+**Trust model:** users see exactly which functions are **allowed** and **denied**; Keystore grant ≠ strategy tx; the indexer verifies recipients stay on the user vault.
+
+---
+
+## Architecture
+
+### Overview
+
+```mermaid
+flowchart LR
+  U["User<br/>passkey"] --> FE["apps/web"]
+  FE -->|"grantSession"| ALT["Altana<br/>Keystore + Orchestrator"]
+  FE -->|"POST session"| IDX["indexer<br/>:42069"]
+  IDX --> PG[("Postgres")]
+  AG["8 agents<br/>:9001–9008"] -->|"poll sessions"| IDX
+  AG -->|"UserOps"| ALT
+  ALT --> CH["BSC Testnet<br/>Venus + PCS"]
+  IDX -->|"scan txs"| CH
+  FE -->|"job ticket"| U
 ```
 
-## What's inside?
+### Session path (hire → agent)
 
-This Turborepo includes the following packages/apps:
+```mermaid
+flowchart TB
+  FE["apps/web"] -->|"① grantSession (passkey)"| ORCH["Altana Orchestrator"]
+  FE -->|"② POST /api/sessions"| API["Next.js API route"]
+  API -->|"③ POST /v1/sessions"| IDX["indexer"]
+  IDX -->|"④ encrypt + store"| PG[("Postgres amm.user_session")]
+  AG["agent tick"] -->|"⑤ GET /v1/sessions?desk="| IDX
+  AG -->|"⑥ executeSessionCalls"| ORCH
+  ORCH --> CH["on-chain strategy tx"]
+  IDX -->|"⑦ scan grant ≠ strategy"| JOB["GET /v1/jobs/:id"]
+  JOB --> FE
 
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `@next/eslint-plugin-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo build
+  AG -.->|"fallback dev only"| DIR["USER_SESSIONS_DIR<br/>data/sessions/"]
 ```
 
-Without global `turbo`, use your package manager:
+Dashed lines (`-.->`) are **optional** — agents can read local JSON files when the indexer is down or during local dogfooding without a VPS. In production, steps **②→⑤** go through the indexer only.
 
-```sh
-cd my-turborepo
-npx turbo build
-pnpm exec turbo build
-pnpm exec turbo build
+### Hire flow (sequence)
+
+```mermaid
+sequenceDiagram
+  actor U as User
+  participant W as apps/web
+  participant A as Altana Keystore
+  participant I as Indexer
+  participant G as Agent VPS
+
+  U->>W: Hire agent + set cap/lease
+  W->>A: Protocol approve (once, admin path)
+  W->>A: grantSession (allowlist, cap, expiry)
+  A-->>W: grant tx hash + session key
+  W->>I: POST /v1/sessions (encrypted envelope)
+  I->>I: Persist to Postgres
+  loop Every tick (~40s)
+    G->>I: GET /v1/sessions?desk=
+    I-->>G: Encrypted session rows for this agentId
+    G->>A: executeSessionCalls (strategy)
+    A-->>G: UserOp on-chain
+  end
+  I->>I: Scan Orchestrator + vToken + PCS txs
+  U->>W: Job ticket — grant vs strategy txs
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+### Three data layers
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+| Layer | Source | Used for |
+|---------|--------|---------------|
+| **Context** | BSC mainnet via indexer | Venus APR, PCS tick in market UI |
+| **Live** | `GET /strategy` per agent | Agent status, last action |
+| **Proof** | Ponder + `session_scan` | Job ticket: grant tx, strategy tx count, recipients verified |
 
-```sh
-turbo build --filter=docs
+---
+
+## Repo layout
+
+```
+Am-M/
+├── apps/
+│   ├── web/                 # Marketplace FE (Next.js) — hire, account, jobs
+│   ├── indexer/             # Ponder indexer + REST API (/v1/sessions, /v1/jobs)
+│   └── docs/                # Docs site (Turbo scaffold)
+├── packages/
+│   └── agent-strategy/      # Shared DeFi logic — Venus, PCS, permissions, tick loops
+├── agents/                  # 8 seller workspaces (outside pnpm Turbo root)
+│   ├── healthfactor/
+│   ├── rebalancing/
+│   ├── gridtrading/
+│   ├── yieldrouter/
+│   └── *agg/                # Aggressive variants (symlink to conservative)
+├── data/sessions/           # Local dev fallback for user session files
+├── ecosystem.config.cjs     # pm2 — 8 agents + indexer
+├── docker-compose.yml       # Postgres
+└── docs/                    # PRD, RUNNING, DEPLOY
 ```
 
-Without global `turbo`:
+> **Important:** `pnpm dev` at the repo root only runs **Next.js**. Agents run separately via `bag dev` or pm2 — see [`docs/RUNNING.md`](docs/RUNNING.md).
 
-```sh
-npx turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
+---
+
+## Tech stack
+
+| Layer | Technology |
+|---------|-----------|
+| Frontend | Next.js 15, React, Tailwind, Altana SDK |
+| Agents | BNB Agent Studio (`bag` CLI), Node ≥ 22 |
+| Strategy | `@am-m/agent-strategy` — viem, Venus API, PCS V3 |
+| Indexer | [Ponder](https://ponder.sh), Postgres |
+| Auth / tx | Altana passkey smart accounts + Keystore sessions |
+| Identity | ERC-8004 (8004scan) |
+| Commerce | ERC-8183 $U retainer (optional at hire) |
+| Deploy | pm2, nginx, Docker Compose |
+
+---
+
+## Quick start (marketplace FE)
+
+```bash
+# Prerequisite: Node ≥ 24, pnpm
+pnpm install
+
+# apps/web/.env — copy from example, set INDEXER_URL + secrets
+pnpm --filter web dev
+# → http://localhost:3000
 ```
 
-### Develop
+### Local indexer (optional)
 
-To develop all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo dev
+```bash
+cp apps/indexer/.env.example apps/indexer/.env
+docker compose up -d postgres
+pnpm --filter indexer dev
+# API → http://127.0.0.1:42069
 ```
 
-Without global `turbo`, use your package manager:
+### One local agent
 
-```sh
-cd my-turborepo
-npx turbo dev
-pnpm exec turbo dev
-pnpm exec turbo dev
+```bash
+cd agents/healthfactor
+cp .env.example .studio/.env.local   # set WALLET_PASSWORD, 9router
+cd app/agent && bag wallet new       # fund tBNB + $U
+bag wallet session grant --force --budget-u 5 --expiry-days 90 --yes
+cd ../.. && bag dev                  # → :9001
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+Full details: [`docs/RUNNING.md`](docs/RUNNING.md).
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+---
 
-```sh
-turbo dev --filter=web
+## Production deploy
+
+Eight agent subdomains + one indexer behind nginx:
+
+| Agent | URL |
+|-------|-----|
+| healthfactor | https://healthfactor.ammlabs.fun/ |
+| rebalancing | https://rebalancing.ammlabs.fun/ |
+| gridtrading | https://gridtrading.ammlabs.fun/ |
+| yieldrouter | https://yieldrouter.ammlabs.fun/ |
+| healthfactoragg | https://healthfactoragg.ammlabs.fun/ |
+| rebalancingagg | https://rebalancingagg.ammlabs.fun/ |
+| gridtradingagg | https://gridtradingagg.ammlabs.fun/ |
+| yieldrouteragg | https://yieldrouteragg.ammlabs.fun/ |
+| Indexer API | https://healthfactor.ammlabs.fun/indexer/ |
+
+```bash
+pm2 start ecosystem.config.cjs
+pm2 save
 ```
 
-Without global `turbo`:
+VPS guide, nginx, env, Ponder schema reset: [`docs/DEPLOY.md`](docs/DEPLOY.md).
 
-```sh
-npx turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
+---
+
+## Environment variables
+
+### `apps/web/.env`
+
+| Variable | Description |
+|----------|-----------|
+| `INDEXER_URL` | Indexer base URL (no trailing slash) |
+| `INDEXER_SECRET` | Shared secret for POST session to indexer |
+| `SESSION_KEY_ENCRYPTION_KEY` | 32-byte hex — encrypt session key at rest |
+
+### `apps/indexer/.env`
+
+| Variable | Description |
+|----------|-----------|
+| `DATABASE_URL` | Postgres connection string |
+| `INDEXER_SECRET` | Must match web |
+| `SESSION_KEY_ENCRYPTION_KEY` | Must match web |
+| `BNB_TESTNET_RPC_URL` | BSC testnet RPC |
+| `PONDER_START_BLOCK_97` | Optional — backfill start block |
+
+### `agents/<name>/.studio/.env.local`
+
+| Variable | Description |
+|----------|-----------|
+| `WALLET_PASSWORD` | Agent admin keystore (**do not commit**) |
+| `NINEROUTER_API_KEY` | LLM routing (9router) |
+| `INDEXER_URL` | Poll user sessions from indexer each tick |
+
+---
+
+## Four keys (do not confuse)
+
+| Component | Holder | Role |
+|----------|----------|--------|
+| Altana wallet **user** | User, passkey | Vault + DeFi positions |
+| Session **user→agent** | Indexer + agent VPS | Narrow permission on user vault |
+| Altana wallet **agent** | Team, admin keystore | ERC-8004, receive $U, agent gas |
+| Session **agent** | Agent runtime | Not the admin keystore |
+
+---
+
+## Scripts
+
+```bash
+pnpm build              # turbo build all apps/packages
+pnpm --filter web dev   # marketplace FE
+pnpm --filter indexer dev
+pnpm lint
+pnpm format
 ```
 
-### Remote Caching
+Agent build (VPS):
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo login
+```bash
+cd packages/agent-strategy && pnpm build
+cd agents/yieldrouter/app/agent && pnpm build
+pm2 restart yieldrouter indexer
 ```
 
-Without global `turbo`, use your package manager:
+---
 
-```sh
-cd my-turborepo
-npx turbo login
-pnpm exec turbo login
-pnpm exec turbo login
-```
+## Documentation
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+| Document | Contents |
+|---------|-----|
+| [`docs/PRD.md`](docs/PRD.md) | Product requirements, hackathon strategy |
+| [`docs/RUNNING.md`](docs/RUNNING.md) | Run agents + FE locally |
+| [`docs/DEPLOY.md`](docs/DEPLOY.md) | VPS, pm2, nginx, Postgres, troubleshooting |
+| [`apps/web/FRONTEND_PRD.md`](apps/web/FRONTEND_PRD.md) | Routes & UI spec |
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+---
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+## License
 
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-pnpm exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+Private — hackathon submission. Contact the maintainer before redistribution.

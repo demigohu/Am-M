@@ -35,7 +35,6 @@ export function HeaderNav() {
     <>
       <nav className="hidden items-center gap-8 sm:flex">
         {navLink("/market", "Market")}
-        {navLink("/report", "Report")}
       </nav>
       <Link
         href="/account"

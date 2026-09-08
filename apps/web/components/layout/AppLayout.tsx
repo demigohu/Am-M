@@ -60,9 +60,6 @@ export function SiteFooter() {
       <div className="mx-auto flex max-w-[1360px] flex-col items-center justify-between gap-6 px-6 md:flex-row">
         <BrandLockup variant="footer" showTagline />
         <div className="flex items-center gap-6 font-mono text-sm">
-          <Link href="/report" className="text-bone/80 transition-colors hover:text-bone">
-            Report
-          </Link>
           <a
             href="https://8004scan.io"
             target="_blank"

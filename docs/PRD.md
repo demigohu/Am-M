@@ -1,432 +1,449 @@
 # Am-M — Product Requirements Document
 
-**Nama kerja:** Am-M (Agent Marketplace)
-**Nama publik (usulan):** Am-M
-**Tagline:** Hire agent DeFi. Kunci tetap di kamu. Biarkan dia kerja di market.
-**Hackathon:** [The Smart Money Era: Build the Era](https://www.bnbchain.org/en/hackathons/smart-money-era?tab=overview) (5 Agu – 9 Sep 2026)
-**Status:** Draf untuk build
-**Terakhir diubah:** 29 Agu 2026
+**Working name:** Am-M (Agent Marketplace)  
+**Public name (proposed):** Am-M  
+**Tagline:** Hire a DeFi agent. You keep the keys.  
+**Hackathon:** [The Smart Money Era: Build the Era](https://www.bnbchain.org/en/hackathons/smart-money-era?tab=overview) (5 Aug – 9 Sep 2026)  
+**Status:** Draft for build  
+**Last updated:** 29 Aug 2026
 
-Ini sumber kebenaran untuk apa yang kita ship. Aturan hackathon ada di [`Hackathon.md`](./Hackathon.md). Dokumen ini menerjemahkan aturan itu jadi produk yang benar-benar bisa menang.
+This is the source of truth for what we ship. Hackathon rules live in [`Hackathon.md`](./Hackathon.md). This document turns those rules into a product that can actually win.
 
 ---
 
-## 1. Kenapa produk ini ada
+## 1. Why this product exists
 
-BNB Chain sudah punya stack agent-nya:
+BNB Chain already has an agent stack:
 
-| Lapisan | Standar / produk | Tugas |
+| Layer | Standard / product | Role |
 | --- | --- | --- |
-| Identitas | ERC-8004 + [8004scan](https://8004scan.io) | Siapa agent-nya, reputasi, feedback |
-| Commerce | ERC-8183 + escrow $U | Hire, fund, deliver, settle / dispute |
-| Pembayaran | x402 / B402 | Bayar per call |
+| Identity | ERC-8004 + [8004scan](https://8004scan.io) | Who the agent is, reputation, feedback |
+| Commerce | ERC-8183 + $U escrow | Hire, fund, deliver, settle / dispute |
+| Payments | x402 / B402 | Pay per call |
 | Runtime | [BNB Agent Studio](https://www.bnbchain.org/en/bnb-agent-studio) (`bag` CLI) | Scaffold, deploy, earn |
-| Otoritas | [Altana](https://docs.altana.network) Keystore + session | Agent bertransaksi di dalam limit yang user set |
+| Authority | [Altana](https://docs.altana.network) Keystore + session | Agent transacts within user-set limits |
 
-Yang **belum ada** adalah pintu depannya: tempat user biasa land, pilih pekerjaan, paham agent-nya, lalu hire dalam beberapa klik. 8004scan adalah explorer untuk 200k+ identitas. TermiX adalah agent yang hire agent. Keduanya bukan meja hire kanonikal untuk pekerjaan DeFi di BSC.
+What **does not exist yet** is the front door: where a normal user lands, picks a job, understands the agent, and hires in a few clicks. 8004scan is an explorer for 200k+ identities. TermiX is an agent that hires agents. Neither is the canonical hire desk for DeFi jobs on BSC.
 
-Hadiah main track bukan piala. Pemenang **diadopsi resmi sebagai marketplace BNB Agent Studio**. Juri bilang gamblang: ini bukan demo day. Apa yang kita ship di sini adalah yang user sungguhan sentuh berikutnya.
+The main-track prize is not a trophy. The winner is **officially adopted as the BNB Agent Studio marketplace**. Judges say it plainly: this is not a demo day. What we ship here is what real users touch next.
 
 ---
 
-## 2. Strategi (cara kita menang)
+## 2. Strategy (how we win)
 
-**Satu produk, empat tembakan hadiah.** Jangan pecah jadi empat demo. Marketplace *itulah* submission untuk setiap track.
+**One product, four prize shots.** Do not split into four demos. The marketplace *is* the submission for every track.
 
-| Track | Hadiah | Yang benar-benar mereka nilai |
+| Track | Prize | What they actually score |
 | --- | --- | --- |
-| **Main** | $30k + adopsi resmi | Journey hire ujung ke ujung, data yang bikin orang berani hire, keempat kategori sama dalamnya |
-| **Altana** | 50.000 XP | Tx onchain live di explorer Altana. Agent di wallet Altana. Session dengan allowlist + spend cap + expiry, terdaftar di Keystore. User bisa lihat dan revoke. Bonus: `hireErc8183Agent` + jual x402 |
-| **TermiX** | $6k / $3k / $1k | Mereka hire sendiri dari marketplace kita. Agent harus mengalahkan DIY, dibuktikan di Agent Advantage Report |
-| **PancakeSwap** | 1.000 CAKE | Manfaat nyata untuk trader atau LP PCS — bukan banner |
+| **Main** | $30k + official adoption | End-to-end hire journey, data that makes people willing to hire, all four categories at equal depth |
+| **Altana** | 50,000 XP | Live onchain tx in the Altana explorer. Agents on Altana wallets. Sessions with allowlist + spend cap + expiry, registered in Keystore. User can view and revoke. Bonus: `hireErc8183Agent` + sell x402 |
+| **TermiX** | $6k / $3k / $1k | They hire from our marketplace themselves. Agent must beat DIY, proven in the Agent Advantage Report |
+| **PancakeSwap** | 1,000 CAKE | Real benefit for PCS traders or LPs — not a banner |
 
-### Tesis kompetitif
+### Competitive thesis
 
-Jangan **membangun direktori agent lagi**. Direktori 200k NFT ERC-8004 kalah di Data Quality dan Functionality.
+Do **not build another agent directory**. A directory of 200k ERC-8004 NFTs loses on Data Quality and Functionality.
 
-Bangun **job desk** dengan empat meja first-class. Agent adalah pekerjanya di balik sebuah pekerjaan, diurutkan dengan data protokol live supaya user bisa hire tanpa baca docs.
+Build a **job desk** with four first-class desks. Agents are the workers behind a job, ranked with live protocol data so users can hire without reading docs.
 
-### Yang kemungkinan diuji Phase 2 (masih disembunyikan panitia)
+### What Phase 2 may test (still hidden from organizers)
 
-Asumsi: URL produksi, keandalan mainnet atau mendekati mainnet, state kosong/error, tidak ada jalan buntu, orang tanpa pengetahuan Agent Studio bisa menyelesaikan hire, dan “apakah kita benar-benar mau taruh ini di bnbchain.org”. Bangun untuk adopsi, bukan untuk walkthrough juri.
+Assumption: production URL, mainnet or near-mainnet reliability, empty/error states, no dead ends, someone with zero Agent Studio knowledge can complete a hire, and “would we actually put this on bnbchain.org”. Build for adoption, not for a judge walkthrough.
 
-### Batasan keras dari brief
+### Hard constraints from the brief
 
-- Submission harus **berfungsi dan bisa diakses publik** selama penilaian.
-- Agent di marketplace harus **live di BSC**.
-- Submission satu kategori nilainya jelek. **Keempat kategori, kedalaman sama.**
-- Laporan TermiX harus direncanakan **dari hari pertama** (3 task nyata, dua arah, minimal satu trading/saham/security).
-- Hadiah Altana mensyaratkan **tx live terlihat di explorer mereka** dan alamat wallet di submission.
+- Submission must be **functional and publicly accessible** during judging.
+- Marketplace agents must be **live on BSC**.
+- Single-category submissions score poorly. **All four categories, equal depth.**
+- TermiX report must be planned **from day one** (3 real tasks, both directions, at least one trading/equities/security).
+- Altana prize requires **live tx visible in their explorer** and wallet address in the submission.
 
-### Keputusan produk (29 Agu): agent harus eksekusi, bukan laporan
+### Product decision (29 Aug): agents must execute, not report
 
-**Activate = grant session + bayar 8183 + agent buka/kelola posisi on-chain.** Bukan alert. Bukan “klik sendiri di MetaMask.”
+**Activate = grant session + pay 8183 + agent opens/manages on-chain positions.** Not alerts. Not “click yourself in MetaMask.”
 
-Dana user hidup di smart account Altana (passkey). Agent buka posisi **baru** di situ. Tidak ada “pindah LP dari MetaMask.” MetaMask opsional hanya sebagai keran transfer ke `wallet.address`.
+User funds live in an Altana smart account (passkey). The agent opens **new** positions there. No “move LP from MetaMask.” MetaMask is optional only as a faucet to transfer into `wallet.address`.
 
-Guard **tidak** boleh alert-only sebagai produk utama. Kalau HF pecah, agent repay/supply di dalam cap, atau job gagal jujur (tidak ada yang dieksekusi karena cap/izin) — bukan “kami sudah email.”
+Guard **must not** be alert-only as the main product. If HF breaks, the agent repays/supplies within cap, or the job fails honestly (nothing executed because of cap/permission) — not “we emailed you.”
 
-### Keputusan terkunci dari referensi (29 Agu, malam)
+### Locked decisions from reference (29 Aug, evening)
 
-Acuan: [`referensiprd.md`](./referensiprd.md) v0.8 dan [`referensitechspec.md`](./referensitechspec.md) v0.6 (hasil `bag` 0.0.12 + probe chain 24 Agu). Itu **bahan**, bukan dokumen yang ditimpa buta. Di bawah ini yang masuk Am-M, yang ditolak, dan yang digabung.
+Reference: [`referensiprd.md`](./referensiprd.md) v0.8 and [`referensitechspec.md`](./referensitechspec.md) v0.6 (`bag` 0.0.12 + chain probe 24 Aug). Those are **inputs**, not documents to overwrite blindly. Below: what enters Am-M, what we reject, and what we merge.
 
-#### Ambil (tulis sebagai kebenaran produk)
+#### Adopt (write as product truth)
 
-1. **Empat kunci, jangan tertukar**
+1. **Four keys — do not confuse them**
 
-   | Komponen | Pemegang | Fungsi |
+   | Component | Holder | Role |
    | --- | --- | --- |
-   | Wallet Altana **user** | User, **passkey** (Face ID) | Satu-satunya rekening kerja user. Modal + posisi DeFi. Bukan MetaMask. |
-   | Session **user→agent** | Proses agent (VPS), terenkripsi di DB | Izin sempit atas wallet user. Satu per pasangan user–agent. |
-   | Wallet Altana **agent** | Tim, keystore admin di mesin dev | ERC-8004, terima $U, gas. Tidak pernah pegang dana user. |
-   | Session **agent** | Runtime (`ALTANA_SESSION`) | Yang di server. Bukan keystore admin. |
+   | Altana wallet **user** | User, **passkey** (Face ID) | User’s only working account. Capital + DeFi positions. Not MetaMask. |
+   | Session **user→agent** | Agent process (VPS), encrypted in DB | Narrow permission on user wallet. One per user–agent pair. |
+   | Altana wallet **agent** | Team, admin keystore on dev machine | ERC-8004, receive $U, gas. Never holds user funds. |
+   | Session **agent** | Runtime (`ALTANA_SESSION`) | On the server. Not the admin keystore. |
 
-2. **FE tanpa extension.** Passkey = akun. Tidak ada Connect Wallet. MetaMask paling banter tombol opsional “kirim ke alamat ini” di langkah danai. Hapus pertanyaan terbuka “EOA sign createWallet”.
+2. **FE without extension.** Passkey = account. No Connect Wallet. MetaMask at most an optional “send to this address” button on fund step. Remove open question “EOA sign createWallet”.
 
-3. **Satu wallet user, banyak session.** Hire kedua = grant session baru, bukan passkey + fund lagi. Isolasi dana lewat cap/allowlist per session, bukan sekat wallet (wallet kedua boleh, bukan default).
+3. **One user wallet, many sessions.** Second hire = grant a new session, not passkey + fund again. Fund isolation via cap/allowlist per session, not wallet walls (second wallet allowed, not default).
 
-4. **Posisi baru di dalam Altana, bukan pindah LP lama dari EOA.** Agent tidak bisa jadi owner NFT LP milik MetaMask. UI jujur: “kami buka posisi di rekening kerja kamu.” User yang sudah punya posisi Venus/PCS di EOA tidak dilindungi otomatis.
+4. **New positions inside Altana, not moving old LP from EOA.** Agent cannot become owner of MetaMask LP NFTs. UI is honest: “we open positions in your working account.” Users with existing Venus/PCS positions on EOA are not auto-protected.
 
-5. **User approve protokol lewat jalur admin sekali; agent yang buka posisi lewat session.** Tx pertama session = bukti Altana track. Layar hire wajib preview: pool, range, jumlah. `approve`/`transfer` **tidak** masuk allowlist.
+5. **User approves protocol once via admin path; agent opens positions via session.** First session tx = proof for Altana track. Hire screen must preview: pool, range, amount. `approve`/`transfer` **not** in allowlist.
 
-6. **Allowlist function-level.** Rebalance: `mint`/`burn`/`increaseLiquidity`/`decreaseLiquidity`/`collect` di PCS V3 NFPM. Grid: swap di router (PCS **tidak** punya limit order on-chain). Yield/Guard: `mint`/`redeem`/`repayBorrow` di vToken Venus. Klaim produk: kerugian maksimal **bisa dihitung** (cap + expiry + allowlist), bukan “agent tidak bisa mencuri” — Altana tidak mengikat argumen (`to` di swap/collect). Dashboard verifikasi penerima.
+6. **Function-level allowlist.** Rebalance: `mint`/`burn`/`increaseLiquidity`/`decreaseLiquidity`/`collect` on PCS V3 NFPM. Grid: swap on router (PCS has **no** on-chain limit orders). Yield/Guard: `mint`/`redeem`/`repayBorrow` on Venus vTokens. Product claim: max loss **computable** (cap + expiry + allowlist), not “agent cannot steal” — Altana does not bind args (`to` on swap/collect). Dashboard verifies recipients.
 
-7. **Varian, bukan 1 agent per desk.** Main track minta *informed call which to hire*; TermiX minta *compare*. Minimal 2 profil per kategori (konservatif vs agresif) dari 4 basis kode = 8 agent hireable. 8004scan boleh, **strip terpisah, tidak hireable** — kartu mati = dead end.
+7. **Variants, not 1 agent per desk.** Main track wants *informed call which to hire*; TermiX wants *compare*. Minimum 2 profiles per category (conservative vs aggressive) from 4 codebases = 8 hireable agents. 8004scan allowed, **separate strip, not hireable** — dead Hire button = dead end.
 
-8. **Host agent di VPS, bukan AgentCore.** Scale-to-zero + OAuth Cognito mematikan loop jaga dan hire publik (TermiX/juri). `bag deploy` bukan syarat track. ERC-8004: `bag erc8004 register --endpoint <url publik>`. Loop tick di `unifiedMain.ts` (scaffold tidak punya scheduler). Nama `bag init` tanpa `-`/`_` (jadi `healthfactor`, bukan `health-factor`).
+8. **Host agents on VPS, not AgentCore.** Scale-to-zero + OAuth Cognito kills guard loops and public hire (TermiX/judges). `bag deploy` not required for track. ERC-8004: `bag erc8004 register --endpoint <public url>`. Tick loop in `unifiedMain.ts` (scaffold has no scheduler). `bag init` name without `-`/`_` (`healthfactor`, not `health-factor`).
 
-9. **Data tiga lapis, jujur — FE vs otak agent jangan dicampur.**
+9. **Three honest data layers — do not mix FE and agent brain.**
 
-   | Lapis | Chain | Dipakai siapa | Label UI |
+   | Layer | Chain | Used by | UI label |
    | --- | --- | --- | --- |
-   | Konteks pasar (APR Venus, TVL/volume/fee pool PCS) | **BSC mainnet (56)** | **FE katalog saja** — bantu keputusan hire | Live |
-   | Posisi user, tick, HF, trigger, tx | **BSC testnet (97)** | **Agent** (baca + eksekusi) | Live (testnet) |
-   | Rekam jejak N rebalance / win rate kita | Testnet | FE + TermiX | Live (testnet) |
-   | Backtest historis | Data mainnet | FE | **Simulasi** |
+   | Market context (Venus APR, PCS pool TVL/volume/fee) | **BSC mainnet (56)** | **FE catalog only** — hire decision | Live |
+   | User positions, tick, HF, triggers, tx | **BSC testnet (97)** | **Agent** (read + execute) | Live (testnet) |
+   | Track record N rebalances / win rate | Testnet | FE + TermiX | Live (testnet) |
+   | Historical backtest | Mainnet data | FE | **Simulated** |
 
-   Agent **tidak** mengikuti harga/APR mainnet lalu `execute` di testnet. Trigger selalu state testnet. Mainnet di kartu = konteks, bukan input strategi. Agent harus nyala sebelum FE siap (rekam jejak tidak bisa dikejar di akhir).
+   Agent **must not** follow mainnet price/APR then `execute` on testnet. Triggers always use testnet state. Mainnet on cards = context, not strategy input. Agents must run before FE is ready (track record cannot be caught up at the end).
 
-10. **Yield v1 = satu protokol eksekusi: Venus.** Di testnet ticker `USDT` dipakai dua kontrak (Venus `0xA11c8D9D…` ≠ mock PCS `0x337610d2…`). Tidak ada jembatan. Agent yield **tidak** boleh janji “pindah Venus → PCS/Lista/Aave”. Kerjaan: `mint`/`redeem` antar vUSDT, vUSDC, vBNB menurut APR **testnet** Venus. Dua varian (ambang selisih APR konservatif vs agresif) tetap ada. APR Lista/Aave/PCS **mainnet** boleh di kartu sebagai konteks, dengan copy: “rute yang di-hire di testnet: Venus.” Rebalance/grid memakai pool WBNB/USDT(**Venus**) fee 100, bukan mock PCS; seed jika 0.29 WBNB terlalu tipis. Alamat lengkap: tech spec §1.1.
+10. **Yield v1 = one execution protocol: Venus.** On testnet ticker `USDT` maps to two contracts (Venus `0xA11c8D9D…` ≠ mock PCS `0x337610d2…`). No bridge. Yield agent **must not** promise “move Venus → PCS/Lista/Aave”. Job: `mint`/`redeem` across vUSDT, vUSDC, vBNB per **testnet** Venus APR. Two variants (conservative vs aggressive APR gap threshold) remain. Lista/Aave/PCS **mainnet** APR on cards as labeled context, copy: “hired route on testnet: Venus.” Rebalance/grid use WBNB/USDT(**Venus**) fee-100 pool, not mock PCS; seed if 0.29 WBNB is too thin. Full addresses: tech spec §1.1.
 
-11. **Halaman `/account` (label UI: Akun) — satu hub, bukan modal di Hire.** Signup, danai, saldo, agent aktif, revoke, tarik hidup di sini. Altana tidak punya login hosted; Face ID di halaman ini = `createPasskeyWallet`.
+11. **`/account` page (UI label: Account) — one hub, not a Hire modal.** Signup, fund, balance, active agents, revoke, withdraw live here. Altana has no hosted login; Face ID on this page = `createPasskeyWallet`.
 
-   **Jelajah tetap bebas** (home + desk + detail). Header: **Akun**. Klik Hire tanpa akun → `/account?next=/hire/[id]` (bukan popup).
+   **Browse stays free** (home + desk + detail). Header: **Account**. Hire without account → `/account?next=/hire/[id]` (not a popup).
 
-   Isi `/account`:
+   `/account` contents:
 
-   | State | Yang ditampilkan |
+   | State | Shown |
    | --- | --- |
-   | Belum akun | Satu CTA “Buat akun” → Face ID → alamat muncul |
-   | Akun, belum dana | Alamat, salin, QR, faucet, polling “dana masuk” |
-   | Siap | Saldo, protokol sudah di-approve, agent aktif (cap, expiry, revoke), P&L, tarik |
+   | No account | One CTA **Create account** → Face ID → address appears |
+   | Account, unfunded | Address, copy, QR, faucets, polling “waiting for funds” |
+   | Ready | Balances, protocol approvals, active agents (cap, expiry, Revoke), P&L, Withdraw |
 
-   Prompt biometrik tetap 3 di hire pertama (buat akun, approve, grant), tapi **buat akun + danai + tarik** tidak diselipkan di form hire. Hire page hanya: preview izin + grant + bayar $U. Hire berikutnya: 1 prompt. Kembali: `recoverFromPasskey` di `/account`, tanpa form login.
+   Biometric prompts stay 3 on first hire (create account, approve, grant), but **create account + fund + withdraw** are not embedded in the hire form. Hire page only: preview permissions + grant + pay $U. Next hires: 1 prompt. Return visits: `recoverFromPasskey` on `/account`, no login form.
 
-   Jangan namakan halaman “Wallet” / “Smart account” di nav. “Akun” saja.
+   Do not label the page “Wallet” / “Smart account” in nav. **Account** only.
 
-12. **Dua fee, hanya $U yang dipungut.**
+12. **Two fees — only $U is collected.**
 
-   | | **$U (ERC-8183)** | **Fee kinerja** |
+   | | **$U (ERC-8183)** | **Performance fee** |
    | --- | --- | --- |
-   | Apa | Bayar jasa hire ke wallet agent | % profit posisi DeFi user (mis. 10%) |
-   | Hackathon | **Pungut** (escrow, testnet faucet $U) | **Jangan pungut** — angka di dashboard saja |
-   | Rumus tampilan | harga list + job id | `max(nilai_sekarang − setoran − gas, 0) × bps` |
-   | Saat tarik | tidak relevan | User dapat **seluruh** posisi; tidak ada `transfer` ke kita |
+   | What | Pay hire service to agent wallet | % of user DeFi position profit (e.g. 10%) |
+   | Hackathon | **Collect** (escrow, testnet $U faucet) | **Do not collect** — dashboard number only |
+   | Display formula | list price + job id | `max(current_value − deposit − gas, 0) × bps` |
+   | On withdraw | n/a | User gets **full** position; no `transfer` to us |
 
-   “Fee kinerja terakumulasi” = spreadsheet live (setoran, nilai berjalan, gas, fee *seolah* dibayar) supaya APY bersih bisa ditampilkan. Bukan potongan on-chain. Jangan taruh `transfer` di allowlist session. Pungut lewat admin saat tarik = bonus, bukan v1.
+   “Accrued performance fee” = live spreadsheet (deposit, running value, gas, fee *as if* paid) so net APY can be shown. Not an on-chain deduction. Do not put `transfer` in session allowlist. Collect via admin on withdraw = bonus, not v1.
 
-13. **Indexer: [Ponder](https://ponder.sh).** `apps/indexer` menunjuk BSC testnet (eksekusi, Keystore, job 8183, P&L per session) plus read-only mainnet untuk lapis konteks pasar. Type-safe EVM indexing, API dikonsumsi `apps/web`. Bukan route handler Next sebagai indexer utama. Deploy indexer + Postgres di VPS (Docker Compose); FE di Vercel.
+13. **Indexer: [Ponder](https://ponder.sh).** `apps/indexer` indexes BSC testnet (execution, Keystore, 8183 jobs, P&L per session) plus read-only mainnet for market context layer. Type-safe EVM indexing, API consumed by `apps/web`. Not Next route handlers as the primary indexer. Deploy indexer + Postgres on VPS (Docker Compose); FE on Vercel.
 
-#### Tolak / jangan copy mentah
+#### Reject / do not copy verbatim
 
-- **Hire = session saja, ERC-8183 cuma bonus.** Untuk Am-M, session = **otoritas atas dana**. ERC-8183 tetap **in-scope** sebagai bayar jasa ($U) — scaffold sudah hidup, TermiX butuh hire yang kelihatan sebagai pekerjaan berbayar, bonus Altana menyebut `hireErc8183Agent`. Bukan “session tanpa pembayaran” dan bukan “8183 tanpa session.”
-- **Buku demo dihapus.** Referensi tidak memakainya karena passkey + fund + agent buka posisi sudah membuat TermiX/juri bisa activate tanpa “pindah LP dari MetaMask.” Buku demo hanya cadangan jika spike passkey gagal di device juri.
-- **Python dua lapis / `app/service` / port 8080.** Usang vs CLI 0.0.12. Jangan pakai docs.bnbchain.org deployment lama.
-- **Pieverse gratis + Altana.** Tidak kompatibel (SIWE). LLM = [9router](https://github.com/decolua/9router) (endpoint OpenAI-compatible milik kita); usulan LLM dijepit kode varian, LLM tidak pernah `execute`.
-- **Vault custom / fee on-chain wajib.** Out of scope; merusak non-custodial.
-- **Satu proses Node untuk 4 kategori.** Empat proses, `AGENT_PORT` beda; scaffold selalu coba bind 9000/8088 (peringatan di agent 2–4 wajar).
+- **Hire = session only, ERC-8183 bonus only.** For Am-M, session = **authority over funds**. ERC-8183 stays **in-scope** as service payment ($U) — scaffold is live, TermiX needs paid-looking hire, Altana bonus mentions `hireErc8183Agent`. Not “session without payment” and not “8183 without session.”
+- **Demo book removed.** Reference dropped it because passkey + fund + agent opening positions already lets TermiX/judges activate without “move LP from MetaMask.” Demo book only if passkey spike fails on judge device.
+- **Two-layer Python / `app/service` / port 8080.** Stale vs CLI 0.0.12. Do not use old docs.bnbchain.org deployment.
+- **Free Pieverse + Altana.** Incompatible (SIWE). LLM = [9router](https://github.com/decolua/9router) (our OpenAI-compatible endpoint); variant code clamps LLM proposals, LLM never `execute`s.
+- **Custom vault / mandatory on-chain fee.** Out of scope; breaks non-custodial model.
+- **One Node process for 4 categories.** Four processes, different `AGENT_PORT`; scaffold always tries 9000/8088 (warnings on agents 2–4 are normal).
 
-#### Gabungan yang kita pakai (Activate)
+#### Merged Activate flow
 
 ```
-Jelajah katalog (tanpa akun)
-  → pilih varian
-  → buat akun passkey
-  → danai wallet.address
-  → approve protokol (admin, execute pertama / Keystore)
-  → review scope + tindakan pertama
-  → grantSession (otoritas) + hire ERC-8183 (bayar $U)   ← keduanya
-  → tick 1: agent buka posisi lewat session (tx Altana explorer)
-  → loop tick sampai expiry / revoke
-  → dashboard + revoke + tarik (admin)
+Browse catalog (no account)
+  → pick variant
+  → create passkey account
+  → fund wallet.address
+  → approve protocol (admin, first execute / Keystore)
+  → review scope + first action
+  → grantSession (authority) + hire ERC-8183 (pay $U)   ← both
+  → tick 1: agent opens position via session (tx in Altana explorer)
+  → tick loop until expiry / revoke
+  → dashboard + revoke + withdraw (admin)
 ```
 
-Activate = session hidup **dan** tx strategi keluar, bukan PDF, bukan popup MetaMask.
+Activate = live session **and** strategy tx out, not PDF, not MetaMask popup.
 
 ---
 
-## 3. Visi produk
+## 3. Product vision
 
-Am-M adalah tempat yang kamu tuju saat punya modal nganggur atau risiko DeFi terbuka, dan kamu ingin agent menjalankan pekerjaan spesifik 24/7, tanpa menyerahkan kunci.
+Am-M is where you go when you have idle capital or open DeFi risk and want an agent to run a specific job 24/7 without handing over keys.
 
-Empat pekerjaan, bobot produk sama:
+Four jobs, equal product weight:
 
-| Desk | Pekerjaan user | Kerja agent |
+| Desk | User job | Agent work |
 | --- | --- | --- |
-| **Rebalance** | LP-ku di luar range / aku tidak mau jaga tick | Kelola range LP PancakeSwap, reset posisi |
-| **Grid** | Aku mau beli dip, jual rip di sebuah pair tanpa duduk di layar | Pasang dan kelola order grid otomatis |
-| **Yield** | Token nganggur harus dapat APR terbaik yang tersedia | Di testnet: pindah antar vToken **Venus**. Kartu boleh tampilkan APR protokol lain (mainnet, konteks) |
-| **Guard** | Jangan sampai dilikuidasi waktu aku tidur | Kalau HF pecah: repay/supply di dalam cap — tx, bukan notifikasi |
+| **Rebalance** | My LP is out of range / I don’t want to watch ticks | Manage PancakeSwap LP range, reset positions |
+| **Grid** | I want buy-the-dip / sell-the-rip on a pair without staring at a screen | Place and manage automated grid orders |
+| **Yield** | Idle tokens should earn the best available APR | On testnet: rotate across **Venus** vTokens. Cards may show other protocol APR (mainnet, context) |
+| **Guard** | Don’t get liquidated while I sleep | When HF breaks: repay/supply within cap — tx, not notification |
 
-User tidak perlu tahu ERC-8004, ERC-8183, atau Agent Studio. Mereka pilih desk, bandingkan agent, set budget dan batas waktu, hire, lalu pantau job dan matikan session dalam satu klik.
-
----
-
-## 4. Pengguna
-
-### Primer — user DeFi (manusia)
-
-Punya wallet, beberapa posisi di BNB Chain (LP, lending, stable nganggur), pengetahuan Agent Studio sedikit atau nol. Sukses = hire agent dan paham apa yang boleh dia lakukan.
-
-### Sekunder — pembeli agent (TermiX / agent lain)
-
-Hire lewat flow publik yang sama atau path A2A/ERC-8183 yang terdokumentasi. Juri TermiX akan melakukan ini sendiri. Sukses = tidak butuh buku petunjuk.
-
-### Tersier — penjual agent (kita dulu, orang lain kemudian)
-
-First-party: kita ship empat seller agent yang live supaya marketplace tidak kosong. Nanti: agent ERC-8004 mana pun di BSC yang menyatakan salah satu dari empat kategori bisa terdaftar. Di luar scope UI listing v1 selain keempat agent kita, tapi model data tidak boleh di-hard-code hanya untuk agent kita.
+Users do not need to know ERC-8004, ERC-8183, or Agent Studio. They pick a desk, compare agents, set budget and time limit, hire, then monitor the job and kill the session in one click.
 
 ---
 
-## 5. Metrik sukses (dipetakan ke penilaian)
+## 4. Users
 
-Kita tidak mengarang KPI vanity. Kita instrument apa yang juri nilai.
+### Primary — DeFi user (human)
+
+Has a wallet, some positions on BNB Chain (LP, lending, idle stables), little or no Agent Studio knowledge. Success = hire an agent and understand what it is allowed to do.
+
+### Secondary — agent buyer (TermiX / other agents)
+
+Hire via the same public flow or documented A2A/ERC-8183 path. TermiX judges will do this themselves. Success = no instruction manual needed.
+
+### Tertiary — agent seller (us first, others later)
+
+First-party: we ship four live seller agents so the marketplace is not empty. Later: any ERC-8004 agent on BSC declaring one of four categories can list. v1 UI listing beyond our four agents is out of scope, but the data model must not be hard-coded to only our agents.
+
+---
+
+## 5. Success metrics (mapped to judging)
+
+We do not invent vanity KPIs. We instrument what judges score.
 
 ### Main track
 
-| Kriteria | Batas produk |
+| Criterion | Product bar |
 | --- | --- |
-| **Functionality** | User dingin: land → pilih desk → buka agent → paham → **activate** (hire yang keluar tx, bukan laporan) → lihat job + hash. Nol jalan buntu. Copy tidak pernah bilang “lihat docs”. |
-| **Data Quality** | Setiap kartu agent menampilkan lebih dari nama/jumlah. Cukup angka live untuk memilih A daripada B. Data basi dilabeli. Data hilang = empty state eksplisit, bukan nol palsu. |
-| **Agent Diversity** | 4 desk × ≥2 varian, kedalaman IA sama, bisa dibanding. 8004scan tidak boleh jadi tombol hire mati. |
+| **Functionality** | Cold user: land → pick desk → open agent → understand → **activate** (hire that produces tx, not a report) → see job + hash. Zero dead ends. Copy never says “see docs”. |
+| **Data Quality** | Every agent card shows more than name/count. Enough live numbers to pick A over B. Stale data labeled. Missing data = explicit empty state, not fake zero. |
+| **Agent Diversity** | 4 desks × ≥2 variants, equal IA depth, comparable. 8004scan must not be a dead Hire button. |
 
 ### Altana
 
-Kualifikasi (semua harus benar, atau kita peserta bukan pemenang):
+Qualification (all must be true, or we are participant not winner):
 
-1. Setiap seller agent first-party punya **wallet Altana sendiri**.
-2. Buyer grant **session** dengan call allowlist, spend cap, expiry.
-3. Session **terdaftar di Keystore** (default `grantSession`, bukan `register: false`).
-4. Minimal satu **tx onchain nyata lewat session key itu**, terlihat di explorer Altana (testnet dihitung, mainnet lebih kuat).
-5. **Panel session** di dalam produk: permission, sisa cap, expiry, **Revoke**.
+1. Every first-party seller agent has its **own Altana wallet**.
+2. Buyer grants **session** with call allowlist, spend cap, expiry.
+3. Session **registered in Keystore** (default `grantSession`, not `register: false`).
+4. At least one **real onchain tx via that session key**, visible in Altana explorer (testnet counts, mainnet stronger).
+5. **Session panel** in product: permission, remaining cap, expiry, **Revoke**.
 
-Bonus (kerjakan ini): hire seller dengan `hireErc8183Agent`; minimal satu face seller di x402/B402 jika jenis wallet mengizinkan. Catatan: Agent Studio **menolak jual B402 berbayar di wallet Altana**. Seller first-party memakai ERC-8183 sebagai rel berbayar. Passthrough x402 GRATIS opsional boleh; B402 berbayar adalah keputusan jenis wallet nanti, bukan blocker v1.
+Bonus: hire seller with `hireErc8183Agent`; at least one seller face on x402/B402 if wallet type allows. Note: Agent Studio **rejects paid B402 sell on Altana seller wallet**. First-party sellers use ERC-8183 as paid rail. Optional free x402 passthrough allowed; paid B402 is a wallet-type decision later, not a v1 blocker.
 
 ### TermiX
 
-| Bobot | Batas |
+| Weight | Bar |
 | --- | --- |
-| 30% nilai layanan | Agent mengembalikan kerja nyata dengan harga/kecepatan yang mengalahkan DIY |
-| 30% keunggulan terbukti | Agent Advantage Report (lihat §12) |
-| 20% kategori high-stakes + rekam jejak | Grid + rebalance membawa win rate, window, dan risiko yang diambil |
-| 20% kualitas marketplace | Sama dengan Functionality main track |
+| 30% service value | Agent returns real work at price/speed that beats DIY |
+| 30% proven advantage | Agent Advantage Report (see §12) |
+| 20% high-stakes categories + track record | Grid + rebalance carry win rate, window, risk taken |
+| 20% marketplace quality | Same as Main Functionality |
 
 ### PancakeSwap
 
-Minimal dua desk PCS (**Rebalance** + **Grid**) memberi manfaat terukur (in-range / fee / fill). Yield testnet tidak di-route ke PCS.
+At least two PCS desks (**Rebalance** + **Grid**) deliver measurable benefit (in-range / fee / fill). Yield testnet is not routed to PCS.
 
 ---
 
 ## 6. Scope
 
-### Masuk — v1 (ship hackathon)
+### In — v1 (hackathon ship)
 
-1. Marketplace publik di URL yang stabil (web app).
-2. Empat desk × **minimal 2 varian** (konservatif/agresif), semua **live** di BSC testnet.
-3. Discovery first-party + strip 8004scan **terpisah dan tidak hireable**.
-4. Activate: passkey → danai → approve admin → `grantSession` + `hireErc8183Agent` → agent buka posisi lewat session → tick → dashboard / revoke / tarik.
-5. UI kontrol session (lihat, sisa budget, revoke).
-6. Artefak Agent Advantage Report dari run nyata (bukan angka karangan).
-8. Indexer Ponder + Postgres (testnet eksekusi/P&L/Keystore; mainnet konteks FE).
+1. Public marketplace at a stable URL (web app).
+2. Four desks × **minimum 2 variants** (conservative/aggressive), all **live** on BSC testnet.
+3. First-party discovery + 8004scan strip **separate and not hireable**.
+4. Activate: passkey → fund → admin approve → `grantSession` + `hireErc8183Agent` → agent opens position via session → tick → dashboard / revoke / withdraw.
+5. Session control UI (view, remaining budget, revoke).
+6. Agent Advantage Report artifact from real runs (not made-up numbers).
+7. Ponder indexer + Postgres (testnet execution/P&L/Keystore; mainnet FE context).
 
-### Keluar — v1
+### Out — v1
 
-- Membangun explorer ERC-8004 umum (8004scan sudah itu).
-- Wallet kustodian, treasury bersama, atau “kami yang sign untuk kamu”.
-- Peluncuran token, poin, leaderboard sebagai produk.
-- UI multi-chain (BSC saja).
-- Portal onboarding seller / KYC.
-- B402 berbayar di wallet seller Altana (batasan protokol).
-- Aplikasi native mobile.
-- Auto-settle job ERC-8183 (Studio / SDK menyerahkan approve-reject-dispute ke buyer).
-- Pungut fee kinerja (tampilkan saja). Vault custom.
-- Mengelola posisi DeFi yang sudah ada di EOA user (posisi dibuka baru di wallet Altana).
+- Building a general ERC-8004 explorer (8004scan already is that).
+- Custodial wallet, shared treasury, or “we sign for you”.
+- Token launch, points, leaderboard as product.
+- Multi-chain UI (BSC only).
+- Seller onboarding portal / KYC.
+- Paid B402 on Altana seller wallet (protocol limitation).
+- Native mobile app.
+- Auto-settle ERC-8183 jobs (Studio / SDK leaves approve-reject-dispute to buyer).
+- Collect performance fee (display only). Custom vault.
+- Managing existing DeFi positions on user EOA (positions opened fresh in Altana wallet).
 
-### Nanti (hanya jika v1 sudah kokoh)
+### Later (only if v1 is solid)
 
-- Listing seller pihak ketiga dari semantic search 8004scan, difilter ke empat desk.
-- Hire agent-ke-agent (gaya TermiX) sebagai tipe buyer first-class.
-- Chart PnL historis di luar strip rekam jejak v1.
+- Third-party seller listing from 8004scan semantic search, filtered to four desks.
+- Agent-to-agent hire (TermiX style) as first-class buyer type.
+- Historical PnL charts beyond v1 track-record strip.
 
 ---
 
-## 7. Journey pengguna
+## 7. User journeys
 
-### J1 — Hire dingin (golden path Functionality)
+### J1 — Cold hire (Functionality golden path)
 
-1. Land di `/`. Headline menyatakan empat pekerjaan. Tidak ada jargon protokol di layar pertama.
-2. Klik sebuah desk (mis. Rebalance). Lihat daftar agent **hanya untuk desk itu**, masing-masing dengan metrik live desk-nya (bukan kartu generik).
-3. Buka agent. Baca: apa yang dia **eksekusi**, allowlist, harga $U, reputasi, last tx, rekam jejak.
-4. Activate. Belum punya akun → `/account?next=/hire/[id]` (Buat akun = Face ID di **halaman Akun**, bukan redirect ke altana.network).
-   - Di `/account`: danai `wallet.address` (faucet/QR). MetaMask opsional hanya transfer masuk.
-   - Kembali ke hire: approve protokol (admin) → review allowlist + tindakan pertama → `grantSession` → bayar `hireErc8183Agent`.
-5. Tick pertama: agent buka posisi lewat session (tx di explorer Altana). Loop sampai expiry/revoke.
-6. Dashboard: hash, P&L, sisa cap, status Keystore. Job 8183: FUNDED → SUBMITTED bila rel bayar dipakai.
-7. Kapan saja: Revoke session (passkey) atau tarik dana (jalur admin).
+1. Land on `/`. Headline states four jobs. No protocol jargon on first screen.
+2. Click a desk (e.g. Rebalance). See agents **for that desk only**, each with live desk metrics (not generic cards).
+3. Open agent. Read: what it **executes**, allowlist, $U price, reputation, last tx, track record.
+4. Activate. No account yet → `/account?next=/hire/[id]` (Create account = Face ID on **Account page**, not redirect to altana.network).
+   - On `/account`: fund `wallet.address` (faucet/QR). MetaMask optional for inbound transfer only.
+   - Back to hire: approve protocol (admin) → review allowlist + first action → `grantSession` → pay `hireErc8183Agent`.
+5. First tick: agent opens position via session (tx in Altana explorer). Loop until expiry/revoke.
+6. Dashboard: hash, P&L, remaining cap, Keystore status. 8183 job: FUNDED → SUBMITTED when paid rail used.
+7. Anytime: Revoke session (passkey) or withdraw funds (admin path).
 
-Orang tanpa pengetahuan Agent Studio harus menyelesaikan J1 tanpa README.
+Someone with zero Agent Studio knowledge must complete J1 without a README.
 
-### J2 — Bandingkan lalu hire (Data Quality)
+### J2 — Compare then hire (Data Quality)
 
-Di daftar desk, user sort/filter menurut metrik yang penting untuk pekerjaan itu (APR, headroom health factor, % in-range, win rate grid, harga, reputasi). Dua agent berdampingan nice-to-have; kolom yang bisa di-sort wajib.
+On desk list, user sorts/filters by metrics that matter for that job (APR, HF headroom, % in-range, grid win rate, price, reputation). Side-by-side two agents is nice-to-have; sortable columns required.
 
 ### J3 — Kill switch (Altana)
 
-User buka **/account** (bagian agent aktif), lihat allowlist + cap + expiry, klik Revoke.
+User opens **/account** (active agents section), sees allowlist + cap + expiry, clicks Revoke.
 
-### J4 — Hire TermiX (tanpa chrome manusia)
+### J4 — TermiX hire (no human chrome)
 
-Endpoint hire yang sama dengan J1, terdokumentasi cukup agar TermiX bisa menyelesaikan job dari situs publik. Deliverable bisa di-fetch (`getErc8183DeliverableUrl`) dan diverifikasi terhadap hash onchain.
+Same hire endpoints as J1, documented enough for TermiX to complete a job from the public site. Deliverable fetchable (`getErc8183DeliverableUrl`) and verifiable against onchain hash.
 
 ---
 
-## 8. Arsitektur informasi
+## 8. Information architecture
 
 ```
-/                       Home — empat desk, jelajah tanpa akun
-/desks/*                List + filter + metrik live
-/agents/[id]            Profil; CTA Hire
-/account                Hub: buat akun, danai, saldo, agent aktif, revoke, tarik
-/hire/[id]              Hanya preview izin + grant + bayar $U
-                        (belum akun/dana → redirect /account?next=)
-/jobs/[jobId]           Status job 8183 + deliverable
+/                       Home — four desks, browse without account
+/desks/*                List + filter + live metrics
+/agents/[id]            Profile; Hire CTA
+/account                Hub: create account, fund, balance, active agents, revoke, withdraw
+/hire/[id]              Permission preview + grant + pay $U only
+                        (no account/funds → redirect /account?next=)
+/jobs/[jobId]           8183 job status + deliverable
 /report                 Agent Advantage Report (TermiX)
 ```
 
-`/sessions` tidak dipakai; isinya tab/bagian di `/account`.
+`/sessions` is not a route; content lives under `/account`.
 
-Aturan copy:
+Copy rules:
 
-- Bahasa layar pertama: pekerjaan, bukan standar. Signup: “Buat akun” = passkey di app ini.
-- Nama protokol (ERC-8004, 8183, Keystore) muncul di halaman agent/session sebagai **bukti**, dengan tautan explorer, bukan sebagai prasyarat.
-- Setiap CTA yang bisa gagal punya pemulihan (faucet, retry, “agent offline — pilih yang lain”).
+- First-screen language: jobs, not standards. Signup: “Create account” = passkey in this app.
+- Protocol names (ERC-8004, 8183, Keystore) appear on agent/session pages as **proof**, with explorer links, not as prerequisites.
+- Every CTA that can fail has recovery (faucet, retry, “agent offline — pick another”).
 
 ---
 
-## 9. Kualitas data (lebih dari hitungan)
+## 9. Data quality (more than counts)
 
-8004scan perlu dan **tidak cukup**. Dia memberi identitas dan reputasi. Dia tidak memberitahu apakah kamu harus hire rebalancer jam ini.
+8004scan is necessary and **not sufficient**. It gives identity and reputation. It does not tell you whether to hire a rebalancer today.
 
-### Field bersama (setiap agent)
+### Shared fields (every agent)
 
-| Field | Sumber | Kenapa |
+| Field | Source | Why |
 | --- | --- | --- |
-| Nama, deskripsi, gambar, services (A2A/MCP) | Registrasi ERC-8004 / 8004scan | Identitas |
-| Chain, tokenId, owner | 8004scan `GET /agents/{chainId}/{tokenId}` | Bisa diverifikasi |
-| Reputasi + feedback terbaru | Feedback 8004scan | Trust |
-| Harga list ($U) + SLA | Kartu agent / config seller | Keputusan hire |
-| Terakhir terlihat / kesehatan endpoint | Probe A2A/MCP atau tx onchain terakhir | Hindari agent mati |
-| Job selesai, dispute rate | Riwayat job ERC-8183 yang kita index | Rekam jejak |
-| Wallet + session Keystore (jika Altana) | Explorer Altana + baca Keystore | Otoritas |
+| Name, description, image, services (A2A/MCP) | ERC-8004 registration / 8004scan | Identity |
+| Chain, tokenId, owner | 8004scan `GET /agents/{chainId}/{tokenId}` | Verifiable |
+| Reputation + recent feedback | 8004scan feedback | Trust |
+| List price ($U) + SLA | Agent card / seller config | Hire decision |
+| Last seen / endpoint health | A2A/MCP probe or last onchain tx | Avoid dead agents |
+| Jobs completed, dispute rate | Indexed ERC-8183 job history | Track record |
+| Wallet + Keystore session (if Altana) | Altana explorer + Keystore read | Authority |
 
-Pakai tier Pro hackathon: buat API key 8004scan, daftar lewat [Pro-Tier Upgrade Form](https://www.bnbchain.org/en/hackathons/smart-money-era?tab=resources). Key tetap di server. Browser tidak pernah memegang key 8004scan.
+Use hackathon Pro tier: create 8004scan API key via [Pro-Tier Upgrade Form](https://www.bnbchain.org/en/hackathons/smart-money-era?tab=resources). Key stays on server. Browser never holds 8004scan key.
 
-### Field live per desk (ini kemenangan Data Quality)
+### Live fields per desk (Data Quality win)
 
-| Desk | Angka live yang dilihat user | Chain / protokol |
+| Desk | Live numbers user sees | Chain / protocol |
 | --- | --- | --- |
-| **Rebalance** | In-range vs out-of-range, tick sekarang vs range, estimasi fee 24 jam, umur rebalance terakhir, IL vs HODL (sederhana) | PancakeSwap v3 (v2 hanya jika data v3 terblokir — brief-nya v3: “LP ranges”) |
-| **Grid** | Pair, batas grid, bid/ask yang terisi, PnL terealisasi di window, max drawdown, win rate | Spot PancakeSwap / fill bergaya limit yang kita eksekusi |
-| **Yield** | APR vToken Venus testnet (eksekusi); APR Lista/Aave/PCS **mainnet** di kartu sebagai konteks berlabel | Venus only (eksekusi). Jangan campur USDT mock PCS |
-| **Guard** | Health factor sekarang, harga likuidasi, buffer ke liq, hash aksi terakhir, estimasi waktu ke liq | Venus Comptroller + vToken |
+| **Rebalance** | In-range vs out-of-range, current tick vs range, 24h fee estimate, last rebalance age, simple IL vs HODL | PancakeSwap v3 |
+| **Grid** | Pair, grid bounds, filled bid/ask, realized PnL in window, max drawdown, win rate | PancakeSwap spot / limit-style fills we execute |
+| **Yield** | Venus vToken APR testnet (execution); Lista/Aave/PCS **mainnet** APR on card as labeled context | Venus only (execution). Do not mix mock PCS USDT |
+| **Guard** | Current health factor, liquidation price, buffer to liq, last action hash, estimated time to liq | Venus Comptroller + vToken |
 
-Refresh: poll sekitar 15–60 dtk untuk halaman agent yang terbuka; halaman list 60–120 dtk. Tampilkan “per {waktu}”. Jangan mengarang angka hijau.
+Refresh: poll ~15–60s on open agent page; list pages 60–120s. Show “as of {time}”. Do not invent green numbers.
 
 ### Indexer — [Ponder](https://ponder.sh)
 
-Satu app `apps/indexer` (Ponder + Postgres). `apps/web` hanya konsumsi API-nya, bukan mengindex sendiri.
+One `apps/indexer` app (Ponder + Postgres). `apps/web` only consumes its API.
 
 Ponder testnet (97):
 
-1. Keystore: `getKeys` + `isValidKey` per session (status, sisa waktu, cap).
-2. Riwayat `execute` per session + verifikasi penerima (semua `to` == wallet user).
-3. Snapshot posisi / P&L / fee kinerja **tertampil** (tidak dipungut).
-4. Job ERC-8183 (jobId, status, deliverable URI).
+1. Keystore: `getKeys` + `isValidKey` per session (status, time left, cap).
+2. `execute` history per session + recipient verification (all `to` == user wallet).
+3. Position / P&L / **displayed** performance fee snapshots (not collected).
+4. ERC-8183 jobs (jobId, status, deliverable URI).
 
 Ponder/read mainnet (56), read-only:
 
-5. APR Venus, TVL/volume/fee pool PCS, volatilitas pair — lapis konteks FE.
+5. Venus APR, PCS pool TVL/volume/fee, pair volatility — FE context layer.
 
-Juga sinkron 8004scan berkala (server-side API key). Jangan scrape UI Altana. Jangan dump 200k agent. Seed 8 agent hireable kita; strip 8004scan terpisah, tidak hireable.
+Also periodic 8004scan sync (server-side API key). Do not scrape Altana UI. Do not dump 200k agents. Seed our 8 hireable agents; 8004scan strip separate, not hireable.
 
 ---
 
-## 10. Empat agent first-party (kedalaman sama)
+## 10. Four first-party agents (equal depth)
 
-Scaffold dengan BNB Agent Studio (`bag`). Masing-masing adalah **seller**: identitas ERC-8004, ERC-8183 `negotiate` / `notify_funded`, wallet Altana, live di BSC.
+Scaffold with BNB Agent Studio (`bag`). Each is a **seller**: ERC-8004 identity, ERC-8183 `negotiate` / `notify_funded`, Altana wallet, live on BSC.
 
-**Invariant:** signing adalah kode handler tetap, bukan tool LLM. LLM boleh baca state chain dan mengusulkan; eksekusi lewat kebijakan session Altana.
+**Invariant:** signing is fixed handler code, not an LLM tool. LLM may read chain state and propose; execution goes through Altana session policy.
 
-Setiap agent mendapat **permukaan produk yang sama**: kartu, metrik detail, template task hire, skema deliverable, monitor setelah hire. Internal berbeda, kedalaman sama.
+Each agent gets the **same product surface**: card, detail metrics, hire task template, deliverable schema, post-hire monitor. Internals differ, depth equal.
 
 ### 10.1 Rebalance — `rebalancing`
 
-- **Menjual:** “Jaga posisi PCS ini in-range di bawah cap C sampai waktu T.”
-- **Skills:** PancakeSwap Liquidity (perluas ke **range v3** jika skill publik hanya v2 — brief mensyaratkan reset range, bukan cuma add/remove v2).
-- **Deliverable:** hash tx, range lama → range baru, fee terkumpul, waktu in-range.
-- **Bounty PancakeSwap:** manajemen likuiditas yang lebih pintar.
-- **Allowlist session:** PCS v3 NPM, pool, router, $U, WBNB. Spend cap = max add-liquidity user + fee.
+- **Sells:** “Keep this PCS position in-range under cap C until time T.”
+- **Skills:** PancakeSwap Liquidity (extend to **v3 range** if public skill is v2-only).
+- **Deliverable:** tx hash, old range → new range, fees collected, in-range time.
+- **PancakeSwap bounty:** smarter liquidity management.
+- **Session allowlist:** PCS v3 NPM, pool, router, $U, WBNB. Spend cap = max add-liquidity + fees.
 
 ### 10.2 Grid — `gridtrading`
 
-- **Menjual:** “Jalankan grid di PAIR antara LO dan HI, N level, sampai T atau cap C.”
-- **Skills:** PancakeSwap Trading + Token Radar (kewarasan pair).
-- **Deliverable:** fill, inventory, PnL terealisasi, win rate, drawdown, window.
-- **TermiX:** ini task **trading** yang wajib.
-- **Strip rekam jejak:** win rate, window, risiko yang diambil (max drawdown / notional). Wajib untuk 20% TermiX.
+- **Sells:** “Run grid on PAIR between LO and HI, N levels, until T or cap C.”
+- **Skills:** PancakeSwap Trading + Token Radar.
+- **Deliverable:** fills, inventory, realized PnL, win rate, drawdown, window.
+- **TermiX:** required **trading** task.
+- **Track-record strip:** win rate, window, risk taken. Required for TermiX 20%.
 
 ### 10.3 Yield — `yieldrouter`
 
-- **Menjual:** “Parkir A di Venus; pindah vToken jika APR testnet selisih di atas ambang varian.”
-- **Eksekusi:** Venus saja (`mint` / `redeem` / `redeemUnderlying` pada vUSDT, vUSDC, vBNB).
-- **FE:** APR Lista/Aave/PCS mainnet boleh, label konteks. Bukan tombol rute yang tidak bisa di-tx.
-- **Deliverable / dashboard:** vToken awal → vToken akhir, hash, APR tes vs terealisasi.
-- **Blocker yang diterima:** USDT Venus ≠ USDT mock PCS; tidak ada yield lintas protokol di testnet.
+- **Sells:** “Park A on Venus; rotate vToken if testnet APR gap exceeds variant threshold.”
+- **Execution:** Venus only (`mint` / `redeem` / `redeemUnderlying` on vUSDT, vUSDC, vBNB).
+- **FE:** Lista/Aave/PCS mainnet APR allowed, labeled context. Not a button for unroutable paths.
+- **Deliverable / dashboard:** start vToken → end vToken, hash, test APR vs realized.
+- **Accepted blocker:** Venus USDT ≠ mock PCS USDT; no cross-protocol yield on testnet.
 
 ### 10.4 Guard — `healthfactor`
 
-- **Menjual:** “Kalau HF Venus < ambang, repay/supply di dalam cap C sampai T.”
-- **Eksekusi:** Venus Comptroller + vToken. Aave bukan v1 testnet.
-- **Deliverable:** timeline HF, **hash tx penyelamatan** (atau revert/cap habis yang jujur), HF baru.
-- **Bukan produk:** hire yang cuma alert/laporan.
-- **Session:** `repayBorrow` / `mint` saja; spend cap membatasi ukuran penyelamatan.
+- **Sells:** “If Venus HF < threshold, repay/supply within cap C until T.”
+- **Execution:** Venus Comptroller + vToken. Aave not v1 testnet.
+- **Deliverable:** HF timeline, **rescue tx hash** (or honest revert/cap exhausted), new HF.
+- **Not the product:** hire that is alert/report only.
+- **Session:** `repayBorrow` / `mint` only; spend cap limits rescue size.
 
-### Config seller (keempatnya)
+### Seller config (all four)
 
-- Network: `bsc-testnet` dulu, `bsc-mainnet` jika ada waktu dan wallet terdanai.
-- Wallet: `altana` (wajib untuk track Altana).
-- Rel: ERC-8183 berbayar. x402 GRATIS opsional.
-- Face: A2A + X402 (default Studio). MCP opsional.
-- Deploy: **VPS** (pm2/systemd + reverse proxy HTTPS), bukan AgentCore (tidur + OAuth). Daftar ERC-8004 ke URL publik. Jangan andalkan trial `bag deploy --provider bnb` (48 jam).
-- Deliverable 8183: URL publik (disk VPS cukup untuk v1; IPFS hanya jika 8183 fetch butuh objek tahan-deploy).
+- Network: `bsc-testnet` first, `bsc-mainnet` if time and wallet funded.
+- Wallet: `altana` (required for Altana track).
+- Rail: paid ERC-8183. Optional free x402.
+- Face: A2A + X402 (Studio default). MCP optional.
+- Deploy: **VPS** (pm2/systemd + HTTPS reverse proxy), not AgentCore. Register ERC-8004 to public URL. Do not rely on `bag deploy --provider bnb` 48h trial.
+- 8183 deliverable: public URL (VPS disk enough for v1).
 
-### Template task hire (supaya J1 bukan prompt kosong)
+### Hire task templates (so J1 is not an empty prompt)
 
-Setiap desk: 2 varian (konservatif/agresif) dengan field form (jumlah, pair, ambang HF). Preview tindakan pertama wajib sebelum grant. Default = buka posisi di wallet **user**. Cadangan buku demo (wallet agent) hanya jika spike passkey gagal. Deliverable/dashboard wajib hash tx.
+Each desk: 2 variants (conservative/aggressive) with form fields (amount, pair, HF threshold). First-action preview required before grant. Default = open position in **user** wallet. Demo book fallback only if passkey spike fails. Deliverable/dashboard must include tx hash.
+
+### Public agent URLs (production)
+
+Conservative and aggressive variants use the agent folder name + `agg` suffix on the same domain pattern:
+
+| Agent | URL |
+| --- | --- |
+| healthfactor | https://healthfactor.ammlabs.fun/ |
+| rebalancing | https://rebalancing.ammlabs.fun/ |
+| gridtrading | https://gridtrading.ammlabs.fun/ |
+| yieldrouter | https://yieldrouter.ammlabs.fun/ |
+| healthfactoragg | https://healthfactoragg.ammlabs.fun/ |
+| rebalancingagg | https://rebalancingagg.ammlabs.fun/ |
+| gridtradingagg | https://gridtradingagg.ammlabs.fun/ |
+| yieldrouteragg | https://yieldrouteragg.ammlabs.fun/ |
+
+Indexer API (single mount): https://healthfactor.ammlabs.fun/indexer/
 
 ---
 
-## 11. Arsitektur
+## 11. Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -437,51 +454,61 @@ Setiap desk: 2 varian (konservatif/agresif) dengan field form (jumlah, pair, amb
              ▼                            ▼
 ┌────────────────────────┐    ┌───────────────────────────┐
 │  apps/indexer (Ponder) │    │  Altana SDK (browser)     │
-│  Postgres di VPS       │    │  createPasskeyWallet      │
+│  Postgres on VPS       │    │  createPasskeyWallet      │
 │  testnet 97: Keystore, │    │  grantSession / revoke    │
-│    eksekusi, P&L, 8183 │    │  hireErc8183Agent         │
+│    execution, P&L,8183 │    │  hireErc8183Agent         │
 │  mainnet 56: APR/TVL   │    └───────────────────────────┘
 │    (read-only, FE)     │
+│  REST: POST/GET        │
+│    /v1/sessions        │
 │  8004scan proxy        │
 └────────────┬───────────┘
+             │
+             │  Hire: web POST encrypted session → Postgres
+             │  Tick: agent GET /v1/sessions?desk= each loop
              ▼
    BSC + Keystore + Venus + PCS V3 + $U
 
 ┌─────────────────────────────────────────────────────────┐
-│  agents/*  (VPS, 4 proses)                              │
-│  Tick + A2A · session user dari DB · ALTANA_SESSION     │
+│  agents/*  (VPS, 8 processes :9001–9008)                │
+│  Tick + A2A · poll sessions from indexer · decrypt in   │
+│  memory · executeSessionCalls · ALTANA_SESSION (agent)  │
+│  Local dev fallback: USER_SESSIONS_DIR / USER_SESSION_  │
+│  FILE under data/sessions/<desk>/                       │
 └─────────────────────────────────────────────────────────┘
 ```
 
-### Tata letak repo (target)
+### Repo layout (target)
 
 ```
-apps/web                 UI marketplace (Next.js)
-apps/indexer             Ponder + schema Keystore / eksekusi / P&L / pasar
-packages/ui              UI bersama
-agents/rebalancing       bag (nama tanpa tanda hubung)
+apps/web                 Marketplace UI (Next.js)
+apps/indexer             Ponder + Keystore / execution / P&L / market schema
+packages/ui              Shared UI
+packages/agent-strategy  Shared Venus/PCS strategy + session poll
+agents/rebalancing       bag (no hyphen in name)
 agents/gridtrading
 agents/yieldrouter
 agents/healthfactor
-docs/PRD.md              source of truth produk
+agents/*agg              Aggressive variants (symlink to conservative)
+docs/PRD.md              Product source of truth
 docs/Hackathon.md
-docs/referensiprd.md     bahan
+docs/referensiprd.md     Reference input
 docs/referensitechspec.md
-docs/agent-advantage.md  laporan TermiX (diisi selama build)
+docs/agent-advantage.md  TermiX report (filled during build)
 ```
 
-`apps/web` sudah ada sebagai starter Turbo. Ganti home starter; jangan mulai app kedua.
+`apps/web` exists as Turbo starter. Replace starter home; do not start a second app.
 
-### Aturan wallet / kunci
+### Wallet / key rules
 
-- User adalah admin. Agent tidak pernah melihat admin key.
-- Session **user→agent** (bukan admin passkey) dikirim HTTPS ke VPS, disimpan terenkripsi, didekripsi hanya di memori tick. Itu model Altana (“hand session to the agent”), bukan custody admin key.
-- `ALTANA_SESSION` = session wallet **agent**. Jangan tertukar dengan session user.
-- API key 8004scan dan URL RPC hanya env server.
+- User is admin. Agent never sees admin key.
+- Session **user→agent** (not admin passkey) sent HTTPS to VPS, stored encrypted, decrypted only in tick memory. Altana model (“hand session to the agent”), not admin-key custody.
+- `ALTANA_SESSION` = **agent** wallet session. Do not confuse with user session.
+- 8004scan API key and RPC URLs are server env only.
 
-### Implementasi hire
+### Hire implementation
 
-Pakai helper buyer atomik Altana, bukan escrow lima langkah buatan sendiri:
+Use Altana atomic buyer helper, not a hand-rolled five-step escrow:
 
 ```ts
 const { jobId } = await hireErc8183Agent(session, {
@@ -491,163 +518,169 @@ const { jobId } = await hireErc8183Agent(session, {
 }, { network: bscNetwork });
 ```
 
-Lalu poll `getErc8183Job` dan `getErc8183DeliverableUrl`. Verifikasi keccak256 manifest terhadap `job.deliverable` sebelum merender konten.
+Then poll `getErc8183Job` and `getErc8183DeliverableUrl`. Verify keccak256 manifest against `job.deliverable` before rendering content.
+
+### Session poll (production path)
+
+1. User grants session in browser → `apps/web` POST `/api/sessions` → indexer `POST /v1/sessions` → encrypted row in Postgres (`agentId`, `desk`, envelope).
+2. Each agent tick: `@am-m/agent-strategy` `loadUserSessions()` → `GET /v1/sessions?desk=` with `INDEXER_SECRET`, filter by `AMM_AGENT_ID`, decrypt with `SESSION_KEY_ENCRYPTION_KEY`, deserialize Altana session, run strategy.
+3. Local dev without indexer: `USER_SESSION_FILE` or `USER_SESSIONS_DIR` under `data/sessions/<desk>/` (same deserialize path, no Postgres).
 
 ---
 
-## 12. Agent Advantage Report (TermiX, hari pertama)
+## 12. Agent Advantage Report (TermiX, day one)
 
-Wajib untuk kelayakan. Bobot skor 30%. Rencanakan run di minggu 1, bukan malam sebelum submit.
+Required for eligibility. 30% of score. Plan runs in week 1, not the night before submit.
 
 ### Format
 
-Terbitkan di `/report` dan lampirkan markdown yang sama di submission.
+Publish at `/report` and attach the same markdown in submission.
 
-Untuk **setiap** dari ≥3 task:
+For **each** of ≥3 tasks:
 
-| Kolom | Isi |
+| Column | Contents |
 | --- | --- |
-| Task | Konkret, bisa diulang |
-| Tanpa agent | Manusia DIY: langkah, waktu, biaya (gas + waktu), artefak output |
-| Dengan agent | Di-hire di Am-M: waktu, $U dibayar, gas, artefak output |
-| Kualitas | Berdampingan, dinilai dari kebenaran bukan prosa |
-| Tautan | Hash tx, jobId, URL deliverable |
+| Task | Concrete, repeatable |
+| Without agent | Human DIY: steps, time, cost (gas + time), output artifact |
+| With agent | Hired on Am-M: time, $U paid, gas, output artifact |
+| Quality | Side by side, judged on truth not prose |
+| Links | Tx hash, jobId, deliverable URL |
 
-Minimal satu task adalah **trading** (grid). Set usulan:
+At least one task must be **trading** (grid). Suggested set:
 
-1. **Trading:** Grid di pair PCS yang likuid untuk window tetap. Bandingkan dengan 3–5 swap manual. Laporkan win rate, window, drawdown.
-2. **Yield:** Pindah vToken Venus (APR tes). Bandingkan dengan manusia di UI Venus. Jangan klaim Lista/Aave/PCS di sisi DIY vs agent kecuali keduanya Venus.
-3. **Guard atau Rebalance:** Entah (a) hitung HF dan rekomendasi repay vs melakukan itu di UI Venus, atau (b) deteksi LP out-of-range dan reset vs PCS v3 manual.
+1. **Trading:** Grid on liquid PCS pair for fixed window. Compare to 3–5 manual swaps. Report win rate, window, drawdown.
+2. **Yield:** Rotate Venus vToken (test APR). Compare to human in Venus UI. Do not claim Lista/Aave/PCS on DIY vs agent unless both are Venus.
+3. **Guard or Rebalance:** Either (a) compute HF and recommend repay vs doing it in Venus UI, or (b) detect out-of-range LP and reset vs manual PCS v3.
 
-Jangan palsukan sisi DIY. Rekam layar atau riwayat tx. Lampirkan output sungguhan.
+Do not fake the DIY side. Screen record or tx history. Attach real outputs.
 
 ---
 
 ## 13. UX / design system
 
-Ini aturan **produk**: journey, IA, copy, state, kepadatan data. Bukan palet.
+Product rules: journey, IA, copy, states, data density. Not the palette.
 
-Tampilan FE (warna, type, kartu, CTA, peanut) mengikuti Stitch di [`apps/web/DESIGN.md`](../apps/web/DESIGN.md). File itu spek visual saja. Kalau copy Stitch bertentangan dengan §7–8, PRD yang menang.
+Visual FE (color, type, cards, CTA) follows Stitch in [`apps/web/DESIGN.md`](../apps/web/DESIGN.md). That file is visual spec only. If Stitch copy conflicts with §7–8, PRD wins.
 
-- Satu produk, empat ruangan (Rebalance, Grid, Yield, Guard) — bukan empat landing page.
-- Layar pertama: pekerjaan, bukan nama protokol. ERC-8004 / 8183 / Keystore muncul di halaman agent dan session sebagai **bukti**, dengan tautan explorer.
-- Data padat: tabel dan tick, bukan crypto-hero kosong atau angka karangan. “Belum diukur” lebih jujur daripada SLA palsu.
-- Tautan explorer di setiap fakta onchain (BscScan, 8004scan, explorer Altana).
-- Desktop dulu (juri di 1280px). Mobile bisa dibaca, bukan target desain.
-- `/account` adalah hub: buat akun (passkey di app ini), danai, saldo, agent aktif, revoke, tarik. Bukan “connect MetaMask.” `/sessions` bukan rute.
-- `/hire/[id]` hanya preview izin + tindakan pertama + grant. Belum akun/dana → `/account?next=`.
-- Setiap CTA yang bisa gagal punya pemulihan (faucet, retry, agent offline).
+- One product, four rooms (Rebalance, Grid, Yield, Guard) — not four landing pages.
+- First screen: jobs, not protocol names. ERC-8004 / 8183 / Keystore on agent and session pages as **proof**, with explorer links.
+- Dense data: tables and ticks, not empty crypto hero or made-up numbers. “Not measured yet” beats fake SLA.
+- Explorer link on every onchain fact (BscScan, 8004scan, Altana explorer).
+- Desktop first (judges at 1280px). Mobile readable, not the design target.
+- `/account` is the hub: create account (passkey in this app), fund, balance, active agents, revoke, withdraw. Not “connect MetaMask.” `/sessions` is not a route.
+- `/hire/[id]` only permission preview + first action + grant. No account/funds → `/account?next=`.
+- Every fallible CTA has recovery (faucet, retry, agent offline).
 
 ---
 
-## 14. Kebutuhan non-fungsional
+## 14. Non-functional requirements
 
-| Area | Batas |
+| Area | Bar |
 | --- | --- |
-| URL publik | HTTPS, hidup sepanjang jendela penilaian |
-| **Chain** | Eksekusi + hire: BSC **testnet 97**. Konteks FE: baca **mainnet 56**. Jangan campur trigger. |
-| **Indexer** | Ponder + Postgres di VPS; FE tidak index sendiri |
-| Latensi | Daftar desk < 2 dtk dengan cache; field live detail agent boleh stream masuk |
-| Kegagalan | RPC/8004scan down → cache last-good + banner, hire dinonaktifkan jika kita tidak bisa verifikasi |
-| Rahasia | `.env` di-gitignore; tidak ada key di bundle client |
-| Aksesibilitas | Path hire lewat keyboard, fokus terlihat, kontras |
+| Public URL | HTTPS, up for entire judging window |
+| **Chain** | Execution + hire: BSC **testnet 97**. FE context: **mainnet 56** read. Do not mix triggers. |
+| **Indexer** | Ponder + Postgres on VPS; FE does not index itself |
+| Latency | Desk list < 2s with cache; live detail fields may stream in |
+| Failure | RPC/8004scan down → last-good cache + banner; disable hire if we cannot verify |
+| Secrets | `.env` gitignored; no keys in client bundle |
+| Accessibility | Hire path keyboard-accessible, visible focus, contrast |
 
 ---
 
-## 15. Rencana build (27 Agu → 9 Sep)
+## 15. Build plan (27 Aug → 9 Sep)
 
-~13 hari. Urutan kritis untuk hadiah, bukan “arsitektur bagus dulu”.
+~13 days. Prize-critical order, not “architecture first”.
 
-| Jendela | Hasil |
+| Window | Outcome |
 | --- | --- |
-| **D0–D1** | Key Pro 8004scan. Scaffold 4 agent Altana. Spike Ponder (testnet + read mainnet). Faucet $U + tBNB. |
-| **D2–D4** | Skeleton J1 di **satu** desk yang **keluar tx** (Yield one-shot paling pendek: supply/stake di wallet Altana agent). Paralel: `sellerCore` tiga agent lain, masing-masing minimal 1 tx path. |
-| **D5–D7** | Keempat desk kedalaman UI sama. Metrik live terpasang. UI grant/revoke session. Tx `hireErc8183Agent` nyata pertama di explorer Altana. |
-| **D8–D10** | Rekam jejak grid. Rute yield. Reset range rebalance. Flow menghadap PancakeSwap benar-benar menggerakkan state PCS. |
-| **D11–D12** | Run Agent Advantage Report (3 task dua arah). Mainnet jika memungkinkan. Deploy publik (bukan trial BNB 48 jam). Pass jalan buntu. |
-| **D13** | Submit: URL, alamat wallet, tautan explorer, laporan, skrip demo. Bekukan fitur. |
+| **D0–D1** | 8004scan Pro key. Scaffold 4 Altana agents. Ponder spike (testnet + mainnet read). Faucet $U + tBNB. |
+| **D2–D4** | J1 skeleton on **one** desk that **produces tx** (Yield one-shot shortest). Parallel: `sellerCore` for other three, each minimal 1 tx path. |
+| **D5–D7** | All four desks equal UI depth. Live metrics wired. Grant/revoke session UI. First real `hireErc8183Agent` tx in Altana explorer. |
+| **D8–D10** | Grid track record. Yield routing. Rebalance range reset. PCS-facing flow actually moves PCS state. |
+| **D11–D12** | Agent Advantage Report runs (3 two-way tasks). Mainnet if possible. Public deploy (not BNB 48h trial). No dead ends. |
+| **D13** | Submit: URL, wallet addresses, explorer links, report, demo script. Feature freeze. |
 
-Jika waktu molor, **potong 8004scan dan pungut fee**, bukan sebuah desk, bukan varian kedua. Satu stub kategori kalah Diversity. Empat desk × 2 varian lebih tipis tapi lengkap menang.
+If time slips, **cut 8004scan and fee collection**, not a desk, not the second variant. One stub category loses Diversity. Four desks × 2 thin variants beats one deep category.
 
 ---
 
-## 16. Kriteria penerimaan (checklist ship)
+## 16. Acceptance checklist (ship)
 
 ### Main
 
-- [ ] URL publik load tanpa feature flag.
-- [ ] Empat desk, masing-masing list + detail + hire + monitor job, kedalaman sama.
-- [ ] J1 user dingin direkam (internal) tanpa petunjuk di luar situs.
-- [ ] Setiap agent terdaftar live di BSC (ERC-8004 + face yang bisa dijangkau).
-- [ ] Dashboard: P&L + fee kinerja **tertampil**, tarik tanpa potongan.
-- [ ] Ponder hidup; listing tidak memukul RPC dari browser untuk index.
+- [ ] Public URL loads without feature flags.
+- [ ] Four desks, each list + detail + hire + job monitor, equal depth.
+- [ ] J1 cold user recorded (internal) without off-site instructions.
+- [ ] Every agent registered live on BSC (ERC-8004 + reachable face).
+- [ ] Dashboard: P&L + **displayed** performance fee, withdraw without deduction.
+- [ ] Ponder live; listing does not hit RPC from browser for index.
 
 ### Altana
 
-- [ ] Empat wallet Altana seller.
-- [ ] Grant session: allowlist + spend cap + expiry, terdaftar di Keystore.
-- [ ] ≥1 tx session-key di [explorer Altana](https://docs.altana.network) (testnet atau mainnet).
-- [ ] Tampilan session in-app + Revoke.
-- [ ] Path hire memakai `hireErc8183Agent`.
-- [ ] Submission menyertakan alamat wallet.
+- [ ] Four Altana seller wallets (eight with aggressive variants).
+- [ ] Grant session: allowlist + spend cap + expiry, registered in Keystore.
+- [ ] ≥1 session-key tx in [Altana explorer](https://docs.altana.network) (testnet or mainnet).
+- [ ] In-app session view + Revoke.
+- [ ] Hire path uses `hireErc8183Agent`.
+- [ ] Submission includes wallet address.
 
 ### TermiX
 
-- [ ] `/report` live dengan 3 task, artefak, satu trading.
-- [ ] Juri bisa hire tanpa walkthrough.
-- [ ] Agent grid (atau trading) menampilkan win rate, window, risiko.
+- [ ] `/report` live with 3 tasks, artifacts, one trading.
+- [ ] Judges can hire without walkthrough.
+- [ ] Grid (or trading) agent shows win rate, window, risk.
 
 ### PancakeSwap
 
-- [ ] Minimal satu flow mengelola likuiditas PCS atau mengeksekusi swap/grid PCS untuk user di bawah cap session.
-- [ ] Manfaat terlihat on-chain (posisi / fill / fee), bukan screenshot mock.
+- [ ] At least one flow manages PCS liquidity or executes PCS swap/grid for user under session cap.
+- [ ] Benefit visible on-chain (position / fill / fee), not mock screenshot.
 
-### Kebersihan
+### Hygiene
 
-- [ ] Tidak ada halaman marketing starter Turbo tersisa di `/`.
-- [ ] State faucet / salah network / agent down ada.
-- [ ] Rahasia tidak di git.
+- [ ] No Turbo marketing starter left on `/`.
+- [ ] Faucet / wrong network / agent down states exist.
+- [ ] No secrets in git.
 
 ---
 
-## 17. Risiko
+## 17. Risks
 
-| Risiko | Mitigasi |
+| Risk | Mitigation |
 | --- | --- |
-| Trial BNB / AgentCore tidur + OAuth | Host di VPS; opsional 1 agent `bag deploy` hanya sebagai demo jalur resmi |
-| Altana + B402 berbayar tidak didukung | ERC-8183 adalah rel berbayar; jangan block di B402 |
-| “Range” PCS vs skill LP Altana v2 | Implementasi ops range v3 sendiri; skill adalah titik awal |
-| Godaan 200k agent | Seed empat agent live; opsional “juga di 8004scan” sekunder |
-| Marketplace kosong di hari 1 | Agent first-party masuk scope, bukan nice-to-have |
-| Metrik palsu | Lebih baik label hilang/basi daripada APR dummy |
-| Laporan TermiX ditinggal sampai akhir | Kalender tiga run di D11; baseline DIY bisa mulai D5 |
-| Phase 2 tidak diketahui | Keandalan produksi dan UX tanpa jalan buntu adalah lindung nilai |
+| BNB trial / AgentCore sleep + OAuth | Host on VPS; optional 1 agent `bag deploy` as official-path demo only |
+| Altana + paid B402 unsupported | ERC-8183 is paid rail; do not block on B402 |
+| PCS “range” vs Altana LP v2 skill | Implement v3 range ops ourselves; skill is starting point |
+| Temptation of 200k agents | Seed four live agents; optional “also on 8004scan” secondary |
+| Empty marketplace day 1 | First-party agents in scope, not nice-to-have |
+| Fake metrics | Missing/stale label beats dummy APR |
+| TermiX report left to last night | Calendar three runs at D11; DIY baseline from D5 |
+| Unknown Phase 2 | Production reliability and no dead ends is the hedge |
 
 ---
 
-## 18. Pertanyaan terbuka
+## 18. Open questions
 
-Sudah tertutup: passkey, testnet 97, VPS, 2 varian/desk, Yield Venus-only, posisi baru di Altana, 8183 + session, **Ponder**, mainnet = FE saja, fee kinerja tidak dipungut.
+Closed: passkey, testnet 97, VPS, 2 variants/desk, Yield Venus-only, new positions in Altana, 8183 + session, **Ponder**, mainnet = FE only, performance fee not collected.
 
-Masih terbuka (teknis, bukan produk):
+Still open (technical, not product):
 
-1. Signature kanonik fungsi PCS V3 yang terima struct (bukan placeholder `(...)`).
-2. Apakah `grantSession` + `sessionSigner` yang dibangkitkan di browser persist ke agent tanpa jebakan byte-exact JSON.
-3. Passkey di Chrome / Safari / Firefox (+ fallback HP via QR WebAuthn).
-4. Interval tick per desk vs kuota 9router.
-5. Dampak `evaluator_type: uma_oov3` pada settle 8183.
-6. Brand publik (Am-M vs nama yang bisa duduk di bnbchain.org).
+1. Canonical PCS V3 function signatures that take structs (not placeholder `(...)`).
+2. Whether browser `grantSession` + `sessionSigner` persists to agent without byte-exact JSON traps.
+3. Passkey on Chrome / Safari / Firefox (+ mobile QR WebAuthn fallback).
+4. Tick interval per desk vs 9router quota.
+5. Impact of `evaluator_type: uma_oov3` on 8183 settle.
+6. Public brand (Am-M vs name that fits bnbchain.org).
 
 ---
 
-## 19. Referensi
+## 19. References
 
-- Ringkasan hackathon: https://www.bnbchain.org/en/hackathons/smart-money-era
+- Hackathon overview: https://www.bnbchain.org/en/hackathons/smart-money-era
 - Agent Studio: https://www.bnbchain.org/en/bnb-agent-studio
-- Docs Studio: https://docs.bnbchain.org/developer-kit/bnbchain-studio/
-- Hire ERC-8183 Altana: https://docs.altana.network/sdk/erc8183
-- Skills Altana: https://skills.altana.network
-- API 8004scan: https://8004scan.io/developers
+- Studio docs: https://docs.bnbchain.org/developer-kit/bnbchain-studio/
+- Altana ERC-8183 hire: https://docs.altana.network/sdk/erc8183
+- Altana skills: https://skills.altana.network
+- 8004scan API: https://8004scan.io/developers
 - Ponder: https://ponder.sh
-- Brief internal: [`docs/Hackathon.md`](./Hackathon.md)
-- Referensi desain (bahan, bukan source of truth): [`docs/referensiprd.md`](./referensiprd.md), [`docs/referensitechspec.md`](./referensitechspec.md)
+- Internal brief: [`docs/Hackathon.md`](./Hackathon.md)
+- Design reference (input, not source of truth): [`docs/referensiprd.md`](./referensiprd.md), [`docs/referensitechspec.md`](./referensitechspec.md)

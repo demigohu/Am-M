@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { PeanutMark } from "../brand/PeanutMark";
 
 function Track() {
   return (
@@ -8,7 +8,7 @@ function Track() {
           <span className="font-display text-[22px] font-bold tracking-wider text-ink uppercase">
             Live (testnet)
           </span>
-          <Image src="/brand/peanut-mark.svg" alt="" width={32} height={16} className="inline-block h-4 w-8 object-contain" />
+          <PeanutMark className="h-7 w-7 shrink-0" />
         </span>
       ))}
     </div>
